@@ -30,9 +30,10 @@ MODEL_PATHS = {
 def process_text(text, ner_model_path=MODEL_PATHS['ner'],
                  stmt_model_path=MODEL_PATHS['stmt'],
                  role_model_path=MODEL_PATHS['role'],
-                 stmt_conf_threshold=0.95):
+                 stmt_conf_threshold=0.95,
+                 grounder=None):
     ise = IndraStructuredExtractor(ner_model_path, stmt_model_path,
                                    role_model_path, stmt_conf_threshold)
     res = ise.extract_structured_statements(text)
-    ip = IndraBertProcessor(res)
+    ip = IndraBertProcessor(res, grounder=grounder)
     return ip
