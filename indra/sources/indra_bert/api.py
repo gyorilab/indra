@@ -1,7 +1,18 @@
 __all__ = ['process_text']
 
 import os
-from indra_bert import IndraStructuredExtractor
+import logging
+
+logger = logging.getLogger(__name__)
+
+try:
+    from indra_bert import IndraStructuredExtractor
+except ImportError as e:
+    logger.error("""Could not import indra_bert for reading with INDRA BERT.
+                 Please make sure the indra_bert extra dependencies of 
+                 INDRA are installed.""")
+    raise ImportError(e)
+
 from .processor import IndraBertProcessor
 
 MODELS_BASE = os.path.join(os.path.expanduser('~'), '.data', 'indra_bert')
