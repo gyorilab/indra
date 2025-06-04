@@ -52,10 +52,10 @@ class IndraBertProcessor:
             stmt = Complex(members, evidence=[evidence])
             return stmt
         elif issubclass(stmt_class, (RegulateAmount, RegulateActivity)):
-            subj = agents_by_role.get('subject')
-            obj = agents_by_role.get('object')
-            raw_texts = [raw_texts.get('subject'), raw_texts.get('object')]
-            coords = [coords.get('subject'), coords.get('object')]
+            subj = agents_by_role.get('subj')
+            obj = agents_by_role.get('obj')
+            raw_texts = [raw_texts.get('subj'), raw_texts.get('obj')]
+            coords = [coords.get('subj'), coords.get('obj')]
             annotations = {
                 'agents': {
                     'raw_text': raw_texts,
