@@ -1,6 +1,9 @@
 from indra.statements import *
 from indra.ontology.standardize import standardize_agent_name
 
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 class IndraBertProcessor:
     def __init__(self, data, grounder=None):
@@ -85,7 +88,12 @@ class IndraBertProcessor:
     def extract_statements(self):
         self.statements = []
         for entry in self.data:
-            stmt = self.extract_statement(entry)
+            try: 
+                stmt = self.extract_statement(entry)
+            except Exception as e:
+                logger.warning(f"Error processing entry: {e}")
+                logger.debug(f"Entry data: {entry}")
+                continue
             self.statements.append(stmt)
 
 
