@@ -1,6 +1,7 @@
 from indra.statements import *
 from indra.ontology.standardize import standardize_agent_name
 
+import re
 import logging
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -42,6 +43,13 @@ class IndraBertProcessor:
 
         stmt_class = get_statement_by_name(stmt_type)
         if issubclass(stmt_class, Complex):
+            if len(agents_by_role) < 2:
+                raise ValueError("Expected at least two roles: 'members'",
+                                 f" but got {agents_by_role.keys()}")
+            for role, _ in agents_by_role.items():
+                if not re.match(r'members\.\d+', role):
+                    raise ValueError(f"Unexpected role '{role}' for members")
+
             members = [agent for role, agent in agents_by_role.items()]
             raw_texts = [raw_text for role, raw_text in raw_texts.items()]
             coords = [coord for role, coord in coords.items()]
@@ -55,6 +63,10 @@ class IndraBertProcessor:
             stmt = Complex(members, evidence=[evidence])
             return stmt
         elif issubclass(stmt_class, (RegulateAmount, RegulateActivity)):
+            if agents_by_role.keys() != {'subj', 'obj'} or len(agents_by_role) != 2: 
+                raise ValueError("Expected exactly two roles: 'subj' and 'obj'",
+                                    f" but got {agents_by_role.keys()}")
+
             subj = agents_by_role.get('subj')
             obj = agents_by_role.get('obj')
             raw_texts = [raw_texts.get('subj'), raw_texts.get('obj')]
@@ -69,6 +81,10 @@ class IndraBertProcessor:
             stmt = stmt_class(subj, obj, evidence=[evidence])
             return stmt
         elif issubclass(stmt_class, Modification):
+            if agents_by_role.keys() != {'enz', 'sub'} or len(agents_by_role) != 2:
+                raise ValueError("Expected exactly two roles: 'enz' and 'sub'",
+                                    f" but got {agents_by_role.keys()}")
+
             enz = agents_by_role.get('enz')
             sub = agents_by_role.get('sub')
             raw_texts = [raw_texts.get('enz'), raw_texts.get('sub')]
