@@ -15,25 +15,66 @@ except ImportError as e:
 
 from .processor import IndraBertProcessor
 
-MODELS_BASE = os.path.join(os.path.expanduser('~'), '.data', 'indra_bert')
+def create_extractor(
+    ner_model_path="thomaslim6793/indra_bert_ner_agent_detection", 
+    stmt_model_path="thomaslim6793/indra_bert_indra_stmt_classifier",
+    role_model_path="thomaslim6793/indra_bert_indra_stmt_agents_role_assigner",
+    stmt_conf_threshold=0.95
+):
+    try: 
+        ise = IndraStructuredExtractor(
+            ner_model_path=ner_model_path, 
+            stmt_model_path=stmt_model_path,
+            role_model_path=role_model_path, 
+            stmt_conf_threshold=stmt_conf_threshold
+        )
+    except Exception as e:
+        logger.info(f"Error - {e}")
+        logger.info("Downloading models from Hugging Face")
+        ise = IndraStructuredExtractor(
+            ner_model_path="thomaslim6793/indra_bert_ner_agent_detection",
+            stmt_model_path="thomaslim6793/indra_bert_indra_stmt_classifier",
+            role_model_path="thomaslim6793/indra_bert_indra_stmt_agents_role_assigner",
+            stmt_conf_threshold=stmt_conf_threshold
+        )
+    return ise
 
-MODEL_PATHS = {
-    'ner': os.path.join(MODELS_BASE, 'ner_agent_detection',
-                        'checkpoint-2450'),
-    'stmt': os.path.join(MODELS_BASE, 'indra_stmt_classifier',
-                         'checkpoint-790'),
-    'role': os.path.join(MODELS_BASE, 'indra_stmt_agents_role_assigner',
-                         'checkpoint-790')
-}
-
-
-def process_text(text, ner_model_path=MODEL_PATHS['ner'],
-                 stmt_model_path=MODEL_PATHS['stmt'],
-                 role_model_path=MODEL_PATHS['role'],
+def process_text(text, 
+                 ner_model_path="thomaslim6793/indra_bert_ner_agent_detection",
+                 stmt_model_path="thomaslim6793/indra_bert_indra_stmt_classifier",
+                 role_model_path="thomaslim6793/indra_bert_indra_stmt_agents_role_assigner",
                  stmt_conf_threshold=0.95,
                  grounder=None):
-    ise = IndraStructuredExtractor(ner_model_path, stmt_model_path,
-                                   role_model_path, stmt_conf_threshold)
-    res = ise.extract_structured_statements(text)
+    ise = create_extractor(
+        ner_model_path=ner_model_path, 
+        stmt_model_path=stmt_model_path,
+        role_model_path=role_model_path, 
+        stmt_conf_threshold=stmt_conf_threshold
+    )
+    res = ise.extract_structured_statements_batch(text)
     ip = IndraBertProcessor(res, grounder=grounder)
     return ip
+
+def process_texts(texts, 
+                  ner_model_path="thomaslim6793/indra_bert_ner_agent_detection",
+                  stmt_model_path="thomaslim6793/indra_bert_indra_stmt_classifier",
+                  role_model_path="thomaslim6793/indra_bert_indra_stmt_agents_role_assigner",
+                  stmt_conf_threshold=0.95,
+                  grounder=None):
+    
+    if not isinstance(texts, list):
+        raise ValueError("Input must be a list of texts.")
+    
+    ise = create_extractor(
+        ner_model_path=ner_model_path, 
+        stmt_model_path=stmt_model_path,
+        role_model_path=role_model_path, 
+        stmt_conf_threshold=stmt_conf_threshold
+    )
+
+    ips = []
+    for text in texts:
+        res = ise.extract_structured_statements_batch(text)
+        ip = IndraBertProcessor(res, grounder=grounder)
+        ips.append(ip)
+    return ips
