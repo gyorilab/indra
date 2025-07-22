@@ -518,7 +518,7 @@ def _store_edge_data(stmts, extra_columns=None):
 
 
 def statement_to_rows(stmt, exclude_stmts=None, complex_members=3,
-                      extra_columns=None, keep_self_loops=True):
+                      extra_columns=None, keep_self_loops=True, source_counts=None):
     rows = []
     if exclude_stmts:
         exclude_types = tuple(
@@ -592,6 +592,13 @@ def statement_to_rows(stmt, exclude_stmts=None, complex_members=3,
             pos = None
         # Create a simple flat list of just the values instead
         # of a dict with keys
+        statemet_hash = stmt.get_hash(refresh=True)
+        if source_counts:
+            evidence_count = sum(source_counts.get(statemet_hash, {}).values())
+            source_count = source_counts.get(statemet_hash, {})
+        else:
+            evidence_count = len(stmt.evidence)
+            source_count = _get_source_counts(stmt)
         row = [
             agA.name,
             agB.name,
@@ -602,10 +609,10 @@ def statement_to_rows(stmt, exclude_stmts=None, complex_members=3,
             res,
             pos,
             stmt_type,
-            len(stmt.evidence),
-            stmt.get_hash(refresh=True),
+            evidence_count,
+            statemet_hash,
             stmt.belief,
-            _get_source_counts(stmt),
+            source_count,
             sign
         ]
         if extra_columns:
