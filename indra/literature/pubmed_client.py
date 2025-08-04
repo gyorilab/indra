@@ -1254,9 +1254,10 @@ def get_all_ids(search_term):
                            "for instructions.")
     # Output is divided by new lines
     elements = res.split('\n')
-    # If there are more than 10k IDs, the CLI outputs a . for each
-    # iteration, these have to be filtered out
-    pmids = [e for e in elements if '.' not in e]
+    # The CLI automatically retries on errors, subprocess.getoutput unfortunately
+    # adds the error message associated with the rety to the output, so we need
+    # to filter out non-numeric elements
+    pmids = [e for e in elements if e.isdigit()]
     return pmids
 
 
