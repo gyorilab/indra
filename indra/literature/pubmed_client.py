@@ -370,7 +370,11 @@ def get_full_xml_by_pmids(
                            "for instructions.")
 
     tree = lxml_etree.fromstring(xml_bytes, parser=parser)
-    # Each article is in a <PubmedArticle> tag, encapsulated in a <PubmedArticleSet> tag
+    # Each article is in a <PubmedArticle> tag, encapsulated in a
+    # <PubmedArticleSet> tag.
+    # Note that the <PubmedArticle> tags are sorted by PMID numerically e.g.,
+    # 10, 11, 20, 1000, and not lexicographically e.g., 10, 1000, 11, 20,
+    # regardless of the order in which the pmids are passed
     if fname is not None:
         pretty_save_xml(tree, fname)
     return tree
