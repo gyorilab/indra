@@ -1255,7 +1255,7 @@ def get_all_ids(search_term):
     # Output is divided by new lines
     elements = res.split('\n')
     # The CLI automatically retries on errors, subprocess.getoutput unfortunately
-    # adds the error message associated with the rety to the output, so we need
+    # adds the error message associated with the retry to the output, so we need
     # to filter out non-numeric elements
     pmids = [e for e in elements if e.isdigit()]
     return pmids
