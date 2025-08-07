@@ -283,14 +283,16 @@ def test_get_article_from_full_xml2():
 @pytest.mark.nogha
 def test_get_full_xml_by_pmids():
     # Uses edirect CLI
-    pmids = ["35814366", "35814367"]
+    pmids = ["35814367", "35814366"]
+    pmids_int_sort = sorted(pmids, key=int)
     full_xml = pubmed_client.get_full_xml_by_pmids(pmids)
     pubmed_articles = full_xml.findall(".//PubmedArticle")
     assert len(pubmed_articles) == 2, len(pubmed_articles)
-    for pmid, pubmed_article in zip(pmids, pubmed_articles):
+    for pmid_int_sort, pubmed_article in zip(pmids_int_sort, pubmed_articles):
         xml_pmid = pubmed_article.find(".//PMID")
         assert xml_pmid is not None
-        assert xml_pmid.text == pmid, xml_pmid.text
+        # Check that the pubmed articles are sorted numerically by PMID
+        assert xml_pmid.text == pmid_int_sort, xml_pmid.text
 
 
 @pytest.mark.webservice

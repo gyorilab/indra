@@ -370,7 +370,11 @@ def get_full_xml_by_pmids(
                            "for instructions.")
 
     tree = lxml_etree.fromstring(xml_bytes, parser=parser)
-    # Each article is in a <PubmedArticle> tag, encapsulated in a <PubmedArticleSet> tag
+    # Each article is in a <PubmedArticle> tag, encapsulated in a
+    # <PubmedArticleSet> tag.
+    # Note that the <PubmedArticle> tags are sorted by PMID numerically e.g.,
+    # 10, 11, 20, 1000, and not lexicographically e.g., 10, 1000, 11, 20,
+    # regardless of the order in which the pmids are passed
     if fname is not None:
         pretty_save_xml(tree, fname)
     return tree
@@ -1250,9 +1254,10 @@ def get_all_ids(search_term):
                            "for instructions.")
     # Output is divided by new lines
     elements = res.split('\n')
-    # If there are more than 10k IDs, the CLI outputs a . for each
-    # iteration, these have to be filtered out
-    pmids = [e for e in elements if '.' not in e]
+    # The CLI automatically retries on errors, subprocess.getoutput unfortunately
+    # adds the error message associated with the retry to the output, so we need
+    # to filter out non-numeric elements
+    pmids = [e for e in elements if e.isdigit()]
     return pmids
 
 
