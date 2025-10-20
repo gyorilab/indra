@@ -108,10 +108,13 @@ class DGIProcessor:
 
         try:
             drug_namespace, drug_identifier = drug_curie.split(":", 1)
-            drug_namespace = drug_namespace.upper()
         except ValueError:
             logger.warning("could not parse drug CURIE: %s", drug_curie)
+            self.skipped += 1
             return
+
+        drug_namespace = drug_namespace.upper()
+        drug_namespace = NS_MAPPING.get(drug_namespace, drug_namespace)
 
         drug_agent = get_standard_agent(
             drug_name, {drug_namespace: drug_identifier},
@@ -293,3 +296,8 @@ def _get_statement_type(s: str) -> Optional[Type[Statement]]:
     if s not in _UNHANDLED:
         _UNHANDLED.add(s)
         logger.warning("unhandled interaction type: %s", s)
+
+
+NS_MAPPING = {
+    'RXCUI': 'RXNORM',
+}

@@ -95,7 +95,7 @@ def test_get_xml_PMC():
 
 @pytest.mark.webservice
 def test_get_xml_invalid():
-    pmc_id = '9999999'
+    pmc_id = '123456789000'
     xml_str = pmc_client.get_xml(pmc_id)
     assert xml_str is None
 
