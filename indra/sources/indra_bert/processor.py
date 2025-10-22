@@ -1,4 +1,5 @@
 from indra.statements import *
+from indra.statements.io import stmt_from_json
 from indra.ontology.standardize import standardize_agent_name
 
 import re
@@ -14,92 +15,39 @@ class IndraBertProcessor:
         self.grounder = grounder if grounder else default_grounder_wrapper
         self.extract_statements()
 
-    def get_agent(self, agent_info, context=None):
-        name = agent_info['text']
-        db_refs = self.grounder(name, context)
-        db_refs['TEXT'] = name
-        agent = Agent(name, db_refs=db_refs)
-        standardize_agent_name(agent, standardize_refs=True)
-        return agent
 
     def extract_statement(self, entry):
-        stmt_type = entry['stmt_pred']['label']
-        roles = entry['role_pred']['roles']
-        text = entry['original_text']
-
-        agents_by_role = {}
-        raw_texts = {}
-        coords = {}
-        for agent_info in roles:
-            role = agent_info['role']
-            agents_by_role[role] = self.get_agent(agent_info, text)
-            raw_texts[role] = agent_info['text']
-            coords[role] = ([agent_info['start'], agent_info['end']])
-
-        evidence = Evidence(
-            source_api=self.source_api,
-            text=text,
-        )
-
-        stmt_class = get_statement_by_name(stmt_type)
-        if issubclass(stmt_class, Complex):
-            if len(agents_by_role) < 2:
-                raise ValueError("Expected at least two roles: 'members'",
-                                 f" but got {agents_by_role.keys()}")
-            for role, _ in agents_by_role.items():
-                if not re.match(r'members\.\d+', role):
-                    raise ValueError(f"Unexpected role '{role}' for members")
-
-            members = [agent for role, agent in agents_by_role.items()]
-            raw_texts = [raw_text for role, raw_text in raw_texts.items()]
-            coords = [coord for role, coord in coords.items()]
-            annotations = {
-                'agents': {
-                    'raw_text': raw_texts,
-                    'coords': coords
-                }
-            }
-            evidence.annotations = annotations
-            stmt = Complex(members, evidence=[evidence])
+        """Extract a statement from JSON using INDRA's built-in functionality."""
+        try:
+            # Use INDRA's built-in statement_from_json functionality
+            stmt = stmt_from_json(entry)
+            
+            # Apply grounding to agents if grounder is available
+            if self.grounder:
+                text = entry['evidence'][0]['text'] if entry.get('evidence') else ""
+                self._apply_grounding(stmt, text)
+            
             return stmt
-        elif issubclass(stmt_class, (RegulateAmount, RegulateActivity)):
-            if agents_by_role.keys() != {'subj', 'obj'} or len(agents_by_role) != 2: 
-                raise ValueError("Expected exactly two roles: 'subj' and 'obj'",
-                                    f" but got {agents_by_role.keys()}")
-
-            subj = agents_by_role.get('subj')
-            obj = agents_by_role.get('obj')
-            raw_texts = [raw_texts.get('subj'), raw_texts.get('obj')]
-            coords = [coords.get('subj'), coords.get('obj')]
-            annotations = {
-                'agents': {
-                    'raw_text': raw_texts,
-                    'coords': coords
-                }
-            }
-            evidence.annotations = annotations
-            stmt = stmt_class(subj, obj, evidence=[evidence])
-            return stmt
-        elif issubclass(stmt_class, Modification):
-            if agents_by_role.keys() != {'enz', 'sub'} or len(agents_by_role) != 2:
-                raise ValueError("Expected exactly two roles: 'enz' and 'sub'",
-                                    f" but got {agents_by_role.keys()}")
-
-            enz = agents_by_role.get('enz')
-            sub = agents_by_role.get('sub')
-            raw_texts = [raw_texts.get('enz'), raw_texts.get('sub')]
-            coords = [coords.get('enz'), coords.get('sub')]
-            annotations = {
-                'agents': {
-                    'raw_text': raw_texts,
-                    'coords': coords
-                }
-            }
-            evidence.annotations = annotations
-            stmt = stmt_class(enz, sub, evidence=[evidence])
-            return stmt
-        else:
-            assert False, "Unsupported statement type: %s" % stmt_class
+            
+        except Exception as e:
+            logger.warning(f"Error creating statement from JSON: {e}")
+            raise
+    
+    def _apply_grounding(self, stmt, context_text):
+        """Apply grounding to all agents in a statement."""
+        # Get all agents from the statement
+        agents = stmt.agent_list()
+        
+        for agent in agents:
+            if agent and agent.name:
+                # Apply grounding
+                grounding_result = self.grounder(agent.name, context_text)
+                if grounding_result:
+                    # Update db_refs with grounding results
+                    agent.db_refs.update(grounding_result)
+                
+                # Standardize the agent name
+                standardize_agent_name(agent, standardize_refs=True)
 
     def extract_statements(self):
         self.statements = []
