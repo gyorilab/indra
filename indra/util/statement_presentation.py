@@ -124,8 +124,9 @@ db_sources = ['psp', 'cbn', 'pc', 'bel_lc', 'signor', 'biogrid',
               'ubibrowser', 'acsn', 'wormbase']
 """Database source names as they appear in the DB"""
 
-reader_sources = ['geneways', 'tees', 'gnbr', 'semrep', 'isi', 'trips',
-                  'rlimsp', 'medscan', 'eidos', 'sparser', 'reach']
+reader_sources = ['geneways', 'tees', 'gnbr', 'semrep', 'indra_bert',
+                  'isi', 'trips', 'rlimsp', 'medscan', 'eidos', 'sparser',
+                  'reach']
 """Reader source names as they appear in the DB"""
 
 # These are mappings where the actual INDRA source, as it appears

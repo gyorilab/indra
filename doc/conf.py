@@ -315,7 +315,7 @@ MOCK_MODULES = [
     'nltk', 'nltk.stem', 'nltk.stem.snowball', 'kappy', 'openpyxl',
     'reportlab', 'reportlab.lib', 'reportlab.lib.enums',
     'reportlab.lib.pagesizes', 'reportlab.platypus', 'reportlab.lib.styles',
-    'reportlab.lib.units'
+    'reportlab.lib.units', 'indra_bert'
     ]
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.MagicMock()

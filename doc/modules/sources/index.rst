@@ -22,6 +22,7 @@ Reading Systems
    eidos/index
    gnbr/index
    semrep
+   indra_bert
 
 Molecular Pathway Databases
 ---------------------------

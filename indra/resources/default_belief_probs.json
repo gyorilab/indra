@@ -34,7 +34,10 @@
     "creeds": 0.01,
     "ubibrowser": 0.01,
     "acsn": 0.01,
-    "semrep": 0.05
+    "semrep": 0.05,
+    "wormbase": 0.01,
+    "indra_bert": 0.05,
+    "indra_gpt": 0.05
   },
   "rand": {
     "eidos": 0.3,
@@ -72,6 +75,8 @@
     "ubibrowser": 0.1,
     "acsn": 0.1,
     "semrep": 0.3,
-    "wormbase": 0.1
+    "wormbase": 0.1,
+    "indra_bert": 0.3,
+    "indra_gpt": 0.3
   }
 }

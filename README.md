@@ -63,6 +63,7 @@ Reading systems:
 | Geneways   | [`indra.sources.geneways`](https://indra.readthedocs.io/en/latest/modules/sources/geneways/index.html) | https://www.ncbi.nlm.nih.gov/pubmed/15016385    |
 | GNBR       | [`indra.sources.gnbr`](https://indra.readthedocs.io/en/latest/modules/sources/gnbr/index.html)         | https://zenodo.org/record/3459420               |
 | SemRep     | [`indra.sources.semrep`](https://indra.readthedocs.io/en/latest/modules/sources/semrep.html)     | https://github.com/lhncbc/SemRep                |
+| INDRA-BERT     | [`indra.sources.indra_bert`](https://indra.readthedocs.io/en/latest/modules/sources/indra_bert.html)     | https://github.com/gyorilab/indra_bert                |
 
 
 Biological pathway databases:

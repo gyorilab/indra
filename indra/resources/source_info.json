@@ -39,6 +39,16 @@
             "background-color": "#fdb462"
         }
     },
+    "indra_bert": {
+        "name": "INDRA-BERT",
+        "link": "https://github.com/gyorilab/indra_bert",
+        "type": "reader",
+        "domain": "biology",
+        "default_style": {
+            "color": "white",
+            "background-color": "#2d9636"
+        }
+    },
     "tees": {
         "name": "TEES",
         "link": "https://github.com/jbjorne/TEES",
