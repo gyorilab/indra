@@ -35,7 +35,8 @@
     "ubibrowser": 0.01,
     "acsn": 0.01,
     "semrep": 0.05,
-    "tkg": 0.05
+    "tkg": 0.05,
+    "klifs": 0.01
   },
   "rand": {
     "eidos": 0.3,
@@ -74,6 +75,7 @@
     "acsn": 0.1,
     "semrep": 0.3,
     "wormbase": 0.1,
-    "tkg": 0.3
+    "tkg": 0.3,
+    "klifs": 0.1
   }
 }
