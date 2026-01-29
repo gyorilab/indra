@@ -1,15 +1,17 @@
 import pytest
 
+from indra.sources import klifs
 from indra.sources.klifs.processor import KlifsProcessor
 from indra.statements import Complex, Inhibition
 
 
 def make_processor(rec, ligand_id=1, ligand_details=None):
     kp = KlifsProcessor(
-        bioactivities=[rec],
         ligand_id=ligand_id,
         ligand_details=ligand_details or {"Name": "TEST_LIG"},
+        ligand_pdb=None
     )
+    kp.bioactivities = rec
     kp.extract_statements()
     return kp
 
@@ -117,3 +119,7 @@ def test_ligand_agent_has_expected_db_refs():
     assert ligand.db_refs["PDB"] == "STU"
     assert ligand.db_refs["INCHIKEY"] == "ABCDEFGHIJKLMN"
     assert ligand.db_refs["SMILES"] == "CCO"
+
+
+def test_process_ligand():
+    klifs.process_ligand(ligand_id='k-252a')
