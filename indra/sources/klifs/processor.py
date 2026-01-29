@@ -1,9 +1,12 @@
 from typing import Any, Dict, List, Optional, Union, Iterable
+import logging
 
 import html
 
 from indra.statements import Agent, Complex, Evidence, Inhibition, Statement
 from .client import KlifsClient
+
+logger = logging.getLogger(__name__)
 
 
 def _safe_str(x: Any) -> Optional[str]:
@@ -46,39 +49,40 @@ class KlifsProcessor:
     """
 
 
-    def __init__(self, ligand_id, ligand_pdb, ligand_details):
-        self.ligand_id = ligand_id
-        self.ligand_pdb = ligand_pdb
-        self.ligand_details = ligand_details
-
-        self. bioactivities = bioactivities = get_bioactivities_for_ligand(
-            ligand_id=ligand_id,
-            ligand_pdb=ligand_pdb,
-            client=_default_client,
-        )
+    def __init__(self, kinase_gene_name, kinase_uniprot):
+        self.client = _default_client
+        self.kinase_gene_name = kinase_gene_name
+        self.kinase_uniprot = kinase_uniprot
+        self.kinase_info = self.client.kinase_id(self.kinase_gene_name)[0]
+        self.kinase_id = self.kinase_info['kinase_ID']
 
         self.statements = []
+
 
     def extract_statements(self) -> None:
         """Extract INDRA Statements into `self.statements`."""
-        self.statements = []
-        ligand = self._make_ligand_agent()
-        if ligand is None:
-            return
-
-        for rec in self.bioactivities or []:
-            kinase = self._make_kinase_agent(rec)
-            if kinase is None:
+        ligands = self.client.ligands_list(self.kinase_id)
+        for ligand in ligands:
+            ligand_agent = self._make_ligand_agent(ligand)
+            try:
+                bioactivities = self.client.bioactivity_list_id(ligand['ligand_ID'])
+            except Exception as e:
+                logger.warning("Failed to get bioactivities for ligand %s: %s")
                 continue
 
-            ev = Evidence(
-                source_api="klifs",
-                annotations=self._make_annotations(rec),
-            )
+            for rec in bioactivities or []:
+                kinase_agent = self._make_kinase_agent(rec)
+                if kinase_agent is None:
+                    continue
 
-            stmt = self._make_statement(ligand, kinase, rec, ev)
-            if stmt is not None:
-                self.statements.append(stmt)
+                ev = Evidence(
+                    source_api="klifs",
+                    annotations=self._make_annotations(rec),
+                )
+
+                stmt = self._make_statement(ligand_agent, kinase_agent, rec, ev)
+                if stmt is not None:
+                    self.statements.append(stmt)
 
     def _make_statement(
         self,
@@ -99,25 +103,15 @@ class KlifsProcessor:
         ev.annotations["klifs_interpretation"] = "default_complex_unknown_type"
         return Complex([ligand, kinase], evidence=[ev])
 
-    def _make_ligand_agent(self) -> Optional[Agent]:
-        ld = self.ligand_details or {}
+    def _make_ligand_agent(self, ligand) -> Optional[Agent]:
+        name = _safe_str(ligand['Name'])
 
-        name = (
-            _safe_str(ld.get("Name"))
-            or _safe_str(ld.get("PDB-code"))
-            or (f"KLIFS_LIGAND_{self.ligand_id}" if self.ligand_id is not None else None)
-            or (_safe_str(self.ligand_pdb) if self.ligand_pdb else None)
-        )
-        if name is None:
-            return None
+        db_refs = {}
+        inchikey = _safe_str(ligand.get("InChIKey"))
+        smiles = _safe_str(ligand.get("SMILES"))
+        pdb_code = _safe_str(ligand.get("PDB-code"))
 
-        db_refs: Dict[str, Any] = {}
-        inchikey = _safe_str(ld.get("InChIKey"))
-        smiles = _safe_str(ld.get("SMILES"))
-        pdb_code = _safe_str(ld.get("PDB-code"))
-
-        if self.ligand_id is not None:
-            db_refs["KLIFS_LIGAND"] = str(self.ligand_id)
+        db_refs["KLIFS_LIGAND"] = str(ligand['ligand_ID'])
         if pdb_code is not None:
             db_refs["PDB"] = pdb_code
         if inchikey is not None:
@@ -139,11 +133,7 @@ class KlifsProcessor:
         return Agent(name, db_refs=db_refs)
 
     def _make_annotations(self, rec: Dict[str, Any]) -> Dict[str, Any]:
-        ann: Dict[str, Any] = {
-            "klifs_ligand_id": self.ligand_id,
-            "klifs_ligand_pdb": self.ligand_pdb,
-        }
-
+        ann = {}
         for k in [
             "standard_type",
             "standard_relation",

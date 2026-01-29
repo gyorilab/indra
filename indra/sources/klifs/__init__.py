@@ -4,6 +4,6 @@ and Structures).
 Public API is primarily a thin, Swagger-mirroring layer defined in .api.
 """
 
-from .api import process_ligand
+from .api import process_kinase
 
-__all__ = ["process_ligand"]
+__all__ = ["process_kinase"]

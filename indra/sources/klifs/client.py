@@ -1,5 +1,4 @@
 import logging
-from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 import requests
@@ -16,7 +15,6 @@ def _comma_list(x: Any) -> Optional[str]:
     return str(x)
 
 
-@dataclass
 class KlifsClient:
     """Thin KLIFS REST client reflecting the Swagger endpoints.
 
@@ -30,59 +28,38 @@ class KlifsClient:
         Optional requests session to reuse HTTP connections.
     """
 
-    base_url: str = "https://klifs.net/api"
+    base_url: str = "https://klifs.net/api/"
     timeout: int = 30
-    session: Optional[requests.Session] = None
 
-    def _session(self) -> requests.Session:
-        """Get a cached requests.Session for connection reuse."""
-        if self.session is None:
-            self.session = requests.Session()
-        return self.session
-
-    def _get(
-        self,
-        path: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> requests.Response:
-        sess = self._session()
-        url = self.base_url + path
-        clean_params = {k: v for k, v in (params or {}).items() if v is not None}
-        logger.debug("KLIFS GET %s params=%s", url, clean_params)
-        res = sess.get(url, params=clean_params, timeout=self.timeout)
-        res.raise_for_status()
+    def send_request(self, endpoint, param=None):
+        res = requests.get(
+            self.base_url + endpoint,
+            params=param,
+            timeout=self.timeout,
+        )
         return res
 
-    def _get_json(
-        self,
-        path: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Any:
-        res = self._get(path, params=params)
+    def get_json(self, endpoint, param=None):
+        res = self.send_request(endpoint, param)
+        res.raise_for_status()
         return res.json()
 
-    def _get_bytes(
-        self,
-        path: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> bytes:
-        res = self._get(path, params=params)
+    def get_content(self, endpoint, param=None):
+        res = self.send_request(endpoint, param)
+        res.raise_for_status()
         return res.content
 
-    # -----------------
-    # Information (Swagger paths)
-    # -----------------
     def kinase_groups(self) -> List[str]:
         """GET /kinase_groups"""
-        return self._get_json("/kinase_groups")
+        return self.get_json('kinase_groups')
 
     def kinase_families(
         self,
         kinase_group: Optional[Union[str, Iterable[str]]] = None,
     ) -> List[str]:
         """GET /kinase_families"""
-        return self._get_json(
-            "/kinase_families",
+        return self.get_json(
+            "kinase_families",
             {"kinase_group": _comma_list(kinase_group)},
         )
 
@@ -93,8 +70,8 @@ class KlifsClient:
         species: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """GET /kinase_names"""
-        return self._get_json(
-            "/kinase_names",
+        return self.get_json(
+            "kinase_names",
             {
                 "kinase_group": _comma_list(kinase_group),
                 "kinase_family": _comma_list(kinase_family),
@@ -108,8 +85,8 @@ class KlifsClient:
         species: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """GET /kinase_information"""
-        return self._get_json(
-            "/kinase_information",
+        return self.get_json(
+            "kinase_information",
             {"kinase_ID": _comma_list(kinase_id), "species": species},
         )
 
@@ -119,69 +96,63 @@ class KlifsClient:
         species: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """GET /kinase_ID"""
-        return self._get_json(
-            "/kinase_ID",
+        return self.get_json(
+            "kinase_ID",
             {"kinase_name": _comma_list(kinase_name), "species": species},
         )
 
-    # -----------------
-    # Ligands (Swagger paths)
-    # -----------------
     def ligands_list(
         self,
         kinase_id: Optional[Union[int, Iterable[int]]] = None,
     ) -> List[Dict[str, Any]]:
         """GET /ligands_list"""
-        return self._get_json(
-            "/ligands_list",
+        return self.get_json(
+            "ligands_list",
             {"kinase_ID": _comma_list(kinase_id)},
         )
 
     def bioactivity_list_id(self, ligand_id: int) -> List[Dict[str, Any]]:
         """GET /bioactivity_list_id"""
-        return self._get_json("/bioactivity_list_id", {"ligand_ID": ligand_id})
+        return self.get_json("bioactivity_list_id", {"ligand_ID": ligand_id})
 
     def bioactivity_list_pdb(self, ligand_pdb: str) -> List[Dict[str, Any]]:
         """GET /bioactivity_list_pdb"""
-        return self._get_json(
-            "/bioactivity_list_pdb",
+        return self.get_json(
+            "bioactivity_list_pdb",
             {"ligand_PDB": ligand_pdb},
         )
 
-    # -----------------
-    # File-return endpoints (Swagger paths; bytes)
-    # -----------------
     def structure_get_pdb_complex(self, structure_id: int) -> bytes:
         """GET /structure_get_pdb_complex (chemical/x-pdb)"""
-        return self._get_bytes(
-            "/structure_get_pdb_complex",
+        return self.get_content(
+            "structure_get_pdb_complex",
             {"structure_ID": structure_id},
         )
 
     def structure_get_complex_mol2(self, structure_id: int) -> bytes:
         """GET /structure_get_complex (chemical/x-mol2)"""
-        return self._get_bytes(
-            "/structure_get_complex",
+        return self.get_content(
+            "structure_get_complex",
             {"structure_ID": structure_id},
         )
 
     def structure_get_protein_mol2(self, structure_id: int) -> bytes:
         """GET /structure_get_protein (chemical/x-mol2)"""
-        return self._get_bytes(
-            "/structure_get_protein",
+        return self.get_content(
+            "structure_get_protein",
             {"structure_ID": structure_id},
         )
 
     def structure_get_pocket_mol2(self, structure_id: int) -> bytes:
         """GET /structure_get_pocket (chemical/x-mol2)"""
-        return self._get_bytes(
-            "/structure_get_pocket",
+        return self.get_content(
+            "structure_get_pocket",
             {"structure_ID": structure_id},
         )
 
     def structure_get_ligand_mol2(self, structure_id: int) -> bytes:
         """GET /structure_get_ligand (chemical/x-mol2)"""
-        return self._get_bytes(
-            "/structure_get_ligand",
+        return self.get_content(
+            "structure_get_ligand",
             {"structure_ID": structure_id},
         )
