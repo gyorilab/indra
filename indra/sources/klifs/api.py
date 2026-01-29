@@ -1,207 +1,176 @@
 # indra/sources/klifs/api.py
 
-import requests
-from typing import List, Dict, Optional, Union
-import logging
+from __future__ import annotations
 
-logger = logging.getLogger(__name__)
+from typing import Any, Dict, Iterable, List, Optional, Union
 
-class KlifsClient:
-    """Client for KLIFS API based on official Swagger documentation."""
-    
-    # The documented base URL from Swagger
-    BASE_URL = 'https://klifs.net/api'
-    
-    def __init__(self):
-        self.session = requests.Session()
-        self._kinase_cache = {}
-        
-    # ========== Information Endpoints ==========
-    
-    def get_kinase_groups(self) -> List[str]:
-        """Get list of kinase groups."""
-        res = self.session.get(f'{self.BASE_URL}/kinase_groups')
-        res.raise_for_status()
-        return res.json()
-    
-    def get_kinase_families(self, kinase_group: Optional[str] = None) -> List[str]:
-        """Get list of kinase families, optionally filtered by group."""
-        params = {}
-        if kinase_group:
-            params['kinase_group'] = kinase_group
-        res = self.session.get(f'{self.BASE_URL}/kinase_families', params=params)
-        res.raise_for_status()
-        return res.json()
-    
-    def get_kinase_names(self, 
-                        kinase_group: Optional[str] = None,
-                        kinase_family: Optional[str] = None,
-                        species: Optional[str] = None) -> List[Dict]:
-        """Get list of kinases with IDs and names.
-        
-        Returns list of dicts with: kinase_ID, name, full_name, species
-        """
-        params = {}
-        if kinase_group:
-            params['kinase_group'] = kinase_group
-        if kinase_family:
-            params['kinase_family'] = kinase_family
-        if species:
-            params['species'] = species.upper()  # HUMAN, MOUSE
-            
-        res = self.session.get(f'{self.BASE_URL}/kinase_names', params=params)
-        res.raise_for_status()
-        return res.json()
-    
-    def get_kinase_information(self, 
-                              kinase_ids: Optional[List[int]] = None,
-                              species: Optional[str] = None) -> List[Dict]:
-        """Get detailed kinase information.
-        
-        Returns KinaseInformation objects with HGNC, UniProt, pocket sequence, etc.
-        """
-        params = {}
-        if kinase_ids:
-            # API expects comma-separated IDs
-            params['kinase_ID'] = ','.join(map(str, kinase_ids))
-        if species:
-            params['species'] = species.upper()
-            
-        res = self.session.get(f'{self.BASE_URL}/kinase_information', params=params)
-        res.raise_for_status()
-        return res.json()
-    
-    def get_kinase_id(self, kinase_name: str, species: Optional[str] = None) -> List[Dict]:
-        """Get kinase ID(s) for a given kinase name.
-        
-        Parameters
-        ----------
-        kinase_name : str
-            Kinase name (e.g., 'EGFR', 'ABL1') or UniProt ID
-        species : str, optional
-            Species filter (HUMAN, MOUSE)
-            
-        Returns
-        -------
-        list
-            List of matching kinases with their IDs
-        """
-        params = {'kinase_name': kinase_name}
-        if species:
-            params['species'] = species.upper()
-            
-        res = self.session.get(f'{self.BASE_URL}/kinase_ID', params=params)
-        res.raise_for_status()
-        return res.json()
-    
-    # ========== Ligands Endpoints ==========
-    
-    def get_ligands_list(self, kinase_ids: Optional[List[int]] = None) -> List[Dict]:
-        """Get all co-crystallized ligands, optionally filtered by kinase IDs.
-        
-        Returns ligandDetails objects with: ligand_ID, PDB-code, Name, SMILES, InChIKey
-        """
-        params = {}
-        if kinase_ids:
-            params['kinase_ID'] = ','.join(map(str, kinase_ids))
-            
-        res = self.session.get(f'{self.BASE_URL}/ligands_list', params=params)
-        res.raise_for_status()
-        return res.json()
-    
-    def get_bioactivity_by_ligand_id(self, ligand_id: int) -> List[Dict]:
-        """Get all ChEMBL bioactivities for a specific ligand.
-        
-        Returns BioactivityDetails with: pref_name, accession, standard_type,
-        standard_value, standard_units, pchembl_value, etc.
-        """
-        params = {'ligand_ID': ligand_id}
-        res = self.session.get(f'{self.BASE_URL}/bioactivity_list_id', params=params)
-        res.raise_for_status()
-        return res.json()
-    
-    def get_bioactivity_by_pdb(self, ligand_pdb: str) -> List[Dict]:
-        """Get all ChEMBL bioactivities for a ligand by PDB code."""
-        params = {'ligand_PDB': ligand_pdb}
-        res = self.session.get(f'{self.BASE_URL}/bioactivity_list_pdb', params=params)
-        res.raise_for_status()
-        return res.json()
-    
-    # ========== Structures Endpoints ==========
-    
-    def get_structures_by_kinase(self, kinase_ids: List[int]) -> List[Dict]:
-        """Get all structures for given kinase ID(s).
-        
-        Returns structureDetails objects.
-        """
-        params = {'kinase_ID': ','.join(map(str, kinase_ids))}
-        res = self.session.get(f'{self.BASE_URL}/structures_list', params=params)
-        res.raise_for_status()
-        return res.json()
-    
-    # ========== Helper Methods ==========
-    
-    def get_kinase_bioactivities(self, kinase_name: str, species: str = 'HUMAN') -> List[Dict]:
-        """Helper to get all bioactivities for a specific kinase.
-        
-        This combines multiple API calls:
-        1. Get kinase ID from name
-        2. Get ligands for that kinase
-        3. Get bioactivities for each ligand
-        
-        Parameters
-        ----------
-        kinase_name : str
-            Kinase name (e.g., 'EGFR')
-        species : str
-            Species (default: 'HUMAN')
-            
-        Returns
-        -------
-        list
-            All bioactivity data for the kinase with ligand info included
-        """
-        # Step 1: Get kinase ID
-        kinase_info = self.get_kinase_id(kinase_name, species=species)
-        if not kinase_info:
-            logger.warning(f"Kinase '{kinase_name}' not found")
-            return []
-        
-        kinase_id = kinase_info[0]['kinase_ID']
-        logger.info(f"Found {kinase_name}: ID {kinase_id}")
-        
-        # Step 2: Get ligands for this kinase
-        ligands = self.get_ligands_list(kinase_ids=[kinase_id])
-        logger.info(f"Found {len(ligands)} ligands for {kinase_name}")
-        
-        # Step 3: Get bioactivities for each ligand
-        all_bioactivities = []
-        for ligand in ligands:
-            ligand_id = ligand.get('ligand_ID')
-            if not ligand_id:
-                continue
-                
-            try:
-                bioactivities = self.get_bioactivity_by_ligand_id(ligand_id)
-                
-                # Add ligand and kinase info to each bioactivity
-                for bio in bioactivities:
-                    # Add ligand info
-                    bio['ligand_ID'] = ligand_id
-                    bio['ligand_name'] = ligand.get('Name')
-                    bio['ligand_SMILES'] = ligand.get('SMILES')
-                    bio['ligand_InChIKey'] = ligand.get('InChIKey')
-                    bio['ligand_PDB'] = ligand.get('PDB-code')
-                    
-                    # Add kinase info
-                    bio['kinase_ID'] = kinase_id
-                    bio['kinase_name'] = kinase_name
-                    
-                all_bioactivities.extend(bioactivities)
-                
-            except Exception as e:
-                logger.debug(f"No bioactivity for ligand {ligand_id}: {e}")
-                continue
-        
-        logger.info(f"Found {len(all_bioactivities)} total bioactivities for {kinase_name}")
-        return all_bioactivities
+from .client import KlifsClient
+from .processor import KlifsProcessor
+
+__all__ = [
+    "get_kinase_groups",
+    "get_kinase_families",
+    "get_kinase_names",
+    "get_kinase_information",
+    "get_kinase_id",
+    "get_ligands_list",
+    "get_bioactivities_for_ligand",
+    "process_bioactivities_for_ligand",
+]
+
+_default_client = KlifsClient()
+
+
+# -----------------
+# Kinase Information
+# -----------------
+def get_kinase_groups(client: KlifsClient = _default_client) -> List[str]:
+    """Get the list of kinase groups from KLIFS.
+
+    Swagger mapping: GET /kinase_groups
+    """
+    return client.kinase_groups()
+
+
+def get_kinase_families(
+    kinase_group: Optional[Union[str, Iterable[str]]] = None,
+    client: KlifsClient = _default_client,
+) -> List[str]:
+    """Get the list of kinase families from KLIFS.
+
+    Swagger mapping: GET /kinase_families
+    """
+    return client.kinase_families(kinase_group=kinase_group)
+
+
+def get_kinase_names(
+    kinase_group: Optional[Union[str, Iterable[str]]] = None,
+    kinase_family: Optional[Union[str, Iterable[str]]] = None,
+    species: Optional[str] = None,
+    client: KlifsClient = _default_client,
+) -> List[Dict[str, Any]]:
+    """Get kinase names (HGNC gene symbols) and associated IDs from KLIFS.
+
+    Swagger mapping: GET /kinase_names
+    """
+    return client.kinase_names(
+        kinase_group=kinase_group,
+        kinase_family=kinase_family,
+        species=species,
+    )
+
+
+def get_kinase_information(
+    kinase_ids: Optional[Union[int, Iterable[int]]] = None,
+    species: Optional[str] = None,
+    client: KlifsClient = _default_client,
+) -> List[Dict[str, Any]]:
+    """Get kinase information records from KLIFS.
+
+    Swagger mapping: GET /kinase_information
+    """
+    return client.kinase_information(kinase_id=kinase_ids, species=species)
+
+
+def get_kinase_id(
+    kinase_name: Union[str, Iterable[str]],
+    species: Optional[str] = None,
+    client: KlifsClient = _default_client,
+) -> List[int]:
+    """Resolve one or more kinase names to KLIFS kinase_ID integers.
+
+    Swagger mapping: GET /kinase_ID
+
+    Notes
+    -----
+    The Swagger endpoint returns KinaseInformation-like records; this helper
+    extracts and returns only the `kinase_ID` integer(s).
+    """
+    rows = client.kinase_id(kinase_name=kinase_name, species=species)
+    out: List[int] = []
+    for row in rows or []:
+        kid = row.get("kinase_ID")
+        if kid is not None:
+            out.append(int(kid))
+    return out
+
+
+# -----------------
+# Ligand Information
+# -----------------
+def get_ligands_list(
+    kinase_id: Optional[Union[int, Iterable[int]]] = None,
+    client: KlifsClient = _default_client,
+) -> List[Dict[str, Any]]:
+    """Get ligandDetails records from KLIFS.
+
+    Swagger mapping: GET /ligands_list
+    """
+    return client.ligands_list(kinase_id=kinase_id)
+
+
+# -----------------
+# Bioactivities (IC50, Kd, Ki, etc.)
+# -----------------
+def get_bioactivities_for_ligand(
+    ligand_id: Optional[int] = None,
+    ligand_pdb: Optional[str] = None,
+    client: KlifsClient = _default_client,
+) -> List[Dict[str, Any]]:
+    """Get bioactivity records for a ligand from KLIFS.
+
+    KLIFS exposes two separate Swagger endpoints that return the same *kind* of
+    record (BioactivityDetails) for a ligand, differing only by identifier:
+
+    - GET /bioactivity_list_id   (use when `ligand_id` is provided)
+    - GET /bioactivity_list_pdb  (use when `ligand_pdb` is provided)
+
+    This convenience function dispatches to the correct endpoint.
+
+    Raises
+    ------
+    ValueError
+        If neither `ligand_id` nor `ligand_pdb` is provided.
+    """
+    if ligand_id is not None:
+        return client.bioactivity_list_id(ligand_id)
+    if ligand_pdb is not None:
+        return client.bioactivity_list_pdb(ligand_pdb)
+    raise ValueError("Provide ligand_id or ligand_pdb.")
+
+
+def process_bioactivities_for_ligand(
+    ligand_id: Optional[int] = None,
+    ligand_pdb: Optional[str] = None,
+    ligand_details: Optional[Dict[str, Any]] = None,
+    client: KlifsClient = _default_client,
+) -> KlifsProcessor:
+    """Fetch ligand bioactivities and convert them into INDRA Statements.
+
+    NOTE: This is meant to be analogous to process_from_web style functions in other INDRA sources
+
+    This is a standard INDRA convenience pipeline that combines:
+    1) A Swagger fetch via one of:
+       - GET /bioactivity_list_id
+       - GET /bioactivity_list_pdb
+    2) INDRA-side transformation via KlifsProcessor
+
+    Returns
+    -------
+    :
+        A KlifsProcessor instance with extracted INDRA Statements available
+        in its `statements` attribute.
+    """
+    bio = get_bioactivities_for_ligand(
+        ligand_id=ligand_id,
+        ligand_pdb=ligand_pdb,
+        client=client,
+    )
+    kp = KlifsProcessor(
+        bioactivities=bio,
+        ligand_id=ligand_id,
+        ligand_pdb=ligand_pdb,
+        ligand_details=ligand_details,
+    )
+    kp.extract_statements()
+    return kp

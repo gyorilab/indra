@@ -1,90 +1,119 @@
 import pytest
-from indra.sources.klifs.api import KlifsClient
+
 from indra.sources.klifs.processor import KlifsProcessor
-from indra.statements import Inhibition
+from indra.statements import Complex, Inhibition
 
 
-# ========== Processor Tests (no network) ==========
+def make_processor(rec, ligand_id=1, ligand_details=None):
+    kp = KlifsProcessor(
+        bioactivities=[rec],
+        ligand_id=ligand_id,
+        ligand_details=ligand_details or {"Name": "TEST_LIG"},
+    )
+    kp.extract_statements()
+    return kp
 
-def test_processor_init():
-    """Test processor initializes correctly."""
-    processor = KlifsProcessor()
-    assert processor.statements == []
-    assert processor.bioactivities == []
 
-
-def test_process_bioactivity():
-    """Test processing a bioactivity into a statement."""
-    bioactivity = {
-        'ligand_id': 123,
-        'ligand_name': 'gefitinib',
-        'kinase_name': 'EGFR',
+def test_ic50_produces_inhibition_statement():
+    rec = {
+        "standard_type": "IC50",
+        "standard_value": 12.3,
+        "standard_units": "nM",
+        "accession": "P00519",
+        "pref_name": "ABL1",
     }
-    processor = KlifsProcessor(bioactivities=[bioactivity])
-    stmts = processor.process_bioactivities()
-    
-    assert len(stmts) == 1
-    assert isinstance(stmts[0], Inhibition)
-    assert stmts[0].subj.name == 'gefitinib'
-    assert stmts[0].obj.name == 'EGFR'
+    kp = make_processor(rec)
+
+    assert len(kp.statements) == 1
+    stmt = kp.statements[0]
+
+    assert isinstance(stmt, Inhibition)
+    assert stmt.subj.name == "TEST_LIG"
+    assert stmt.obj.db_refs["UP"] == "P00519"
+
+    ev = stmt.evidence[0]
+    assert ev.source_api == "klifs"
+    assert ev.annotations["standard_type"] == "IC50"
+    assert ev.annotations["standard_units"] == "nM"
 
 
-def test_process_empty():
-    """Test processor handles empty input."""
-    processor = KlifsProcessor(bioactivities=[])
-    stmts = processor.process_bioactivities()
-    assert stmts == []
-
-
-def test_evidence_creation():
-    """Test evidence is created with correct source."""
-    bioactivity = {
-        'ligand_name': 'imatinib',
-        'kinase_name': 'ABL1',
+@pytest.mark.parametrize("standard_type", ["Kd", "KD", "Ki", "KI"])
+def test_kd_ki_produce_complex_statement(standard_type):
+    rec = {
+        "standard_type": standard_type,
+        "standard_value": 50.0,
+        "standard_units": "nM",
+        "accession": "P00519",
+        "pref_name": "ABL1",
     }
-    processor = KlifsProcessor(bioactivities=[bioactivity])
-    stmts = processor.process_bioactivities()
-    
-    assert len(stmts) == 1
-    assert stmts[0].evidence[0].source_api == 'klifs'
+    kp = make_processor(rec)
+
+    assert len(kp.statements) == 1
+    stmt = kp.statements[0]
+    assert isinstance(stmt, Complex)
 
 
-# ========== API Tests (network) ==========
+def test_unknown_activity_type_defaults_to_complex():
+    rec = {
+        "standard_type": "FOO",
+        "standard_value": 1.0,
+        "standard_units": "nM",
+        "accession": "P00519",
+        "pref_name": "ABL1",
+    }
+    kp = make_processor(rec)
 
-@pytest.mark.webservice
-def test_get_kinase_names():
-    """Test that kinase names can be retrieved."""
-    client = KlifsClient()
-    kinase_names = client.get_kinase_names()
-    assert isinstance(kinase_names, list)
-    assert len(kinase_names) > 0
-    assert 'kinase_ID' in kinase_names[0]
+    assert len(kp.statements) == 1
+    stmt = kp.statements[0]
+    assert isinstance(stmt, Complex)
 
-
-@pytest.mark.webservice
-def test_get_ligands_list():
-    """Test that ligands list can be retrieved."""
-    client = KlifsClient()
-    ligands = client.get_ligands_list()
-    assert isinstance(ligands, list)
-    assert len(ligands) > 0
+    ev = stmt.evidence[0]
+    assert ev.annotations["klifs_interpretation"] == "default_complex_unknown_type"
 
 
-@pytest.mark.webservice
-def test_get_kinase_id():
-    """Test that kinase ID can be retrieved for EGFR."""
-    client = KlifsClient()
-    result = client.get_kinase_id('EGFR')
-    assert isinstance(result, list)
-    assert len(result) > 0
+def test_kinase_agent_grounding_uses_uniprot():
+    rec = {
+        "standard_type": "IC50",
+        "standard_value": 1.0,
+        "standard_units": "nM",
+        "accession": "P00519",
+        "pref_name": "ABL1",
+    }
+    kp = make_processor(rec)
+
+    assert len(kp.statements) == 1
+    stmt = kp.statements[0]
+    kinase = stmt.obj
+    assert kinase.db_refs["UP"] == "P00519"
 
 
-@pytest.mark.webservice
-def test_get_egfr_ligands():
-    """Test retrieving ligands for a specific kinase."""
-    client = KlifsClient()
-    egfr_info = client.get_kinase_id('EGFR')
-    egfr_id = egfr_info[0]['kinase_ID']
-    ligands = client.get_ligands_list(kinase_ids=[egfr_id])
-    assert isinstance(ligands, list)
-    assert len(ligands) > 0
+def test_ligand_agent_has_expected_db_refs():
+    rec = {
+        "standard_type": "Kd",
+        "standard_value": 10.0,
+        "standard_units": "nM",
+        "accession": "P00519",
+        "pref_name": "ABL1",
+    }
+    ligand_details = {
+        "Name": "LIGX",
+        "PDB-code": "STU",
+        "InChIKey": "ABCDEFGHIJKLMN",
+        "SMILES": "CCO",
+    }
+
+    kp = make_processor(rec, ligand_id=123, ligand_details=ligand_details)
+
+    assert len(kp.statements) == 1
+    stmt = kp.statements[0]
+    assert isinstance(stmt, Complex)
+
+    # Don't rely on ordering in Complex.members
+    ligands = [a for a in stmt.members if a.db_refs.get("KLIFS_LIGAND") == "123"]
+    assert len(ligands) == 1
+    ligand = ligands[0]
+
+    assert ligand.db_refs["KLIFS_LIGAND"] == "123"
+    assert ligand.db_refs["PDB"] == "STU"
+    assert ligand.db_refs["INCHIKEY"] == "ABCDEFGHIJKLMN"
+    assert ligand.db_refs["SMILES"] == "CCO"
