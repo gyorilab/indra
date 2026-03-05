@@ -348,5 +348,15 @@
             "color": "white",
             "background-color": "#ffb3ba"
         }
+    },
+    "extri": {
+        "name": "ExTRI",
+        "link": "https://doi.org/10.1016/j.crmeth.2021.100096",
+        "type": "database",
+        "domain": "biology",
+        "default_style": {
+            "color": "black",
+            "background-color": "#9ad1d4"
+        }
     }
 }
