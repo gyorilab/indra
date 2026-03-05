@@ -1,11 +1,11 @@
+"""API for processing ExTRI supplementary tables into INDRA Statements."""
+
 from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
 
 from .processor import ExtriProcessor
-"""API for processing ExTRI supplementary tables into INDRA Statements."""
-
 
 __all__ = [
     'process_from_file',
@@ -44,7 +44,29 @@ def process_from_file(
     require_text: bool = True,
     require_extri_present: bool = True,
 ) -> ExtriProcessor:
-    """Process ExTRI XLSX files into INDRA Statements."""
+    """Process ExTRI input files into INDRA Statements.
+
+    Parameters
+    ----------
+    sentence_coverage_file : str or pathlib.Path
+        Path to the ExTRI sentence-level table (`mmc6`, XLSX).
+    pairs_file : str or pathlib.Path
+        Path to the ExTRI pair-level table (`mmc7`, XLSX).
+    sentence_sheet : str
+        Sheet name in ``sentence_coverage_file``.
+    pairs_sheet : str
+        Sheet name in ``pairs_file``.
+    require_text : bool
+        If True, rows with missing sentence text are skipped.
+    require_extri_present : bool
+        If True, only TF:TG pairs with ``[ExTRI] present == ExTRI`` in
+        the pairs table are processed.
+
+    Returns
+    -------
+    ExtriProcessor
+        A processor with extracted statements in ``statements``.
+    """
     sentence_df = pd.read_excel(
         sentence_coverage_file,
         sheet_name=sentence_sheet,
@@ -72,7 +94,26 @@ def process_dataframe(
     require_text: bool = True,
     require_extri_present: bool = True,
 ) -> ExtriProcessor:
-    """Process ExTRI data frames into INDRA Statements."""
+    """Process ExTRI dataframes into INDRA Statements.
+
+    Parameters
+    ----------
+    sentence_df : pandas.DataFrame
+        Sentence-level ExTRI dataframe.
+    pairs_df : Optional[pandas.DataFrame]
+        Pair-level ExTRI dataframe. If ``require_extri_present`` is True,
+        this dataframe is required.
+    require_text : bool
+        If True, rows with missing sentence text are skipped.
+    require_extri_present : bool
+        If True, only TF:TG pairs with ``[ExTRI] present == ExTRI`` are
+        processed.
+
+    Returns
+    -------
+    ExtriProcessor
+        A processor with extracted statements in ``statements``.
+    """
     processor = ExtriProcessor(
         sentence_df=sentence_df,
         pairs_df=pairs_df,

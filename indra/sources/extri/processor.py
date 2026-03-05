@@ -1,3 +1,5 @@
+"""Processor for ExTRI transcription-factor target-gene interactions."""
+
 import logging
 from typing import List, Optional, Set, Tuple
 
@@ -7,15 +9,32 @@ from indra.databases import hgnc_client
 from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent, Evidence, RegulateAmount
 
-"""Processor for ExTRI transcription-factor target-gene interactions."""
-
 __all__ = ['ExtriProcessor']
 
 logger = logging.getLogger(__name__)
 
 
 class ExtriProcessor:
-    """Processor to extract INDRA Statements from ExTRI tables."""
+    """Extract INDRA Statements from ExTRI tables.
+
+    Parameters
+    ----------
+    sentence_df : pandas.DataFrame
+        Sentence-level ExTRI table (`mmc6`).
+    pairs_df : Optional[pandas.DataFrame]
+        Pair-level ExTRI table (`mmc7`).
+    require_text : bool
+        If True, rows with missing sentence text are skipped.
+    require_extri_present : bool
+        If True, only TF:TG pairs marked as ExTRI in `mmc7` are processed.
+
+    Attributes
+    ----------
+    statements : list[indra.statements.RegulateAmount]
+        Extracted INDRA statements.
+    skipped : int
+        Number of rows skipped during processing.
+    """
 
     def __init__(
         self,
@@ -32,7 +51,13 @@ class ExtriProcessor:
         self.skipped: int = 0
 
     def extract_statements(self) -> List[RegulateAmount]:
-        """Extract statements from the loaded dataframes."""
+        """Extract statements from loaded dataframes.
+
+        Returns
+        -------
+        list[indra.statements.RegulateAmount]
+            Extracted statements.
+        """
         valid_pairs = self._get_valid_pairs()
 
         for _, row in self.sentence_df.iterrows():
