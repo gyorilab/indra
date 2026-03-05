@@ -13,7 +13,7 @@ def main():
                     'requests>=2.11', 'lxml', 'ipython', 'future',
                     'networkx>=3', 'pandas>=2', 'ndex2', 'jinja2',
                     'protmapper>=0.0.29', 'obonet',
-                    'tqdm', 'pybiopax>=0.0.5']
+                    'tqdm', 'pybiopax>=0.0.5', 'openpyxl']
 
     extras_require = {
                       # Inputs and outputs
@@ -88,7 +88,7 @@ def main():
                     'indra.sources.biopax', 'indra.sources.creeds',
                     'indra.sources.crog', 'indra.sources.ctd',
                     'indra.sources.dgi',
-                    'indra.sources.drugbank', 'indra.sources.eidos',
+                    'indra.sources.drugbank', 'indra.sources.eidos', 'indra.sources.extri',
                     'indra.sources.geneways', 'indra.sources.gnbr',
                     'indra.sources.hprd', 'indra.sources.hypothesis',
                     'indra.sources.index_cards',
