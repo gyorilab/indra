@@ -62,13 +62,22 @@ class ExtriProcessor:
 
         parsed = _parse_extri_entry(extri_entry)
         if parsed is None:
-            logger.debug('Could not parse ExTRI entry identifier: %s', extri_entry)
+            logger.debug(
+                'Could not parse ExTRI entry identifier: %s',
+                extri_entry,
+            )
             return None
 
         pmid, sentence_id, tf_from_key, tg_from_key = parsed
 
-        tf_name = _get_str(row, 'Transcription Factor (Associated Gene Name)') or tf_from_key
-        tg_name = _get_str(row, 'Target Gene (Associated Gene Name)') or tg_from_key
+        tf_name = (
+            _get_str(row, 'Transcription Factor (Associated Gene Name)')
+            or tf_from_key
+        )
+        tg_name = (
+            _get_str(row, 'Target Gene (Associated Gene Name)')
+            or tg_from_key
+        )
         sentence_text = _get_str(row, 'Sentence')
         if self.require_text and not sentence_text:
             return None
@@ -98,7 +107,9 @@ class ExtriProcessor:
         if not self.require_extri_present:
             return None
         if self.pairs_df is None:
-            raise ValueError('pairs_df is required when require_extri_present=True.')
+            raise ValueError(
+                'pairs_df is required when require_extri_present=True.'
+            )
 
         valid_pairs: Set[str] = set()
         for _, row in self.pairs_df.iterrows():
