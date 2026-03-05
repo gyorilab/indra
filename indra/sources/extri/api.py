@@ -1,13 +1,11 @@
-# -*- coding: utf-8 -*-
-
-"""API for processing ExTRI supplementary tables into INDRA Statements."""
-
 from pathlib import Path
 from typing import Optional, Union
 
 import pandas as pd
 
 from .processor import ExtriProcessor
+"""API for processing ExTRI supplementary tables into INDRA Statements."""
+
 
 __all__ = [
     'process_from_file',

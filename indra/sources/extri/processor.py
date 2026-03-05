@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-"""Processor for ExTRI transcription-factor target-gene interactions."""
-
 import logging
 from typing import List, Optional, Set, Tuple
 
@@ -10,6 +6,8 @@ import pandas as pd
 from indra.databases import hgnc_client
 from indra.ontology.standardize import get_standard_agent
 from indra.statements import Agent, Evidence, RegulateAmount
+
+"""Processor for ExTRI transcription-factor target-gene interactions."""
 
 __all__ = ['ExtriProcessor']
 
