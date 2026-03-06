@@ -144,7 +144,7 @@ class ExtriProcessor:
 
     @staticmethod
     def _make_gene_agent(name: str) -> Agent:
-        db_refs = {'TEXT': name}
+        db_refs = {}
 
         hgnc_id = hgnc_client.get_current_hgnc_id(name)
         if isinstance(hgnc_id, list):
