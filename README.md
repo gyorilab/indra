@@ -77,7 +77,7 @@ Biological pathway databases:
 | Target Affinity Spectrum   | [`indra.sources.tas`](https://indra.readthedocs.io/en/latest/modules/sources/tas/index.html#)        | https://doi.org/10.1101/358978                                  |
 | HPRD                       | [`indra.sources.hprd`](https://indra.readthedocs.io/en/latest/modules/sources/hprd/index.html) | http://www.hprd.org                                             |                   |
 | TRRUST                     | [`indra.sources.trrust`](https://indra.readthedocs.io/en/latest/modules/sources/trrust.html) | https://www.grnpedia.org/trrust/                                |                   |
-| ExTRI                      | [`indra.sources.extri`](https://indra.readthedocs.io/en/latest/modules/sources/extri.html) | https://doi.org/10.1016/j.crmeth.2021.100096                  |
+| ExTRI                      | [`indra.sources.extri`](https://indra.readthedocs.io/en/latest/modules/sources/extri.html) | https://doi.org/10.1016/j.bbagrm.2021.194778              |
 | Phospho.ELM                | [`indra.sources.phosphoelm`](https://indra.readthedocs.io/en/latest/modules/sources/phosphoelm/index.html) | http://phospho.elm.eu.org/                                      |
 | VirHostNet                | [`indra.sources.virhostnet`](https://indra.readthedocs.io/en/latest/modules/sources/virhostnet/index.html) | http://virhostnet.prabi.fr/                                     |
 | CTD                  | [`indra.sources.ctd`](https://indra.readthedocs.io/en/latest/modules/sources/ctd/index.html) | http://ctdbase.org                                              |
