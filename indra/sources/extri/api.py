@@ -22,9 +22,9 @@ def process_from_file(
     Parameters
     ----------
     sentence_coverage_file : str or pathlib.Path
-        Path to the ExTRI sentence-level table (`mmc6`, XLSX).
+        Path to the ExTRI sentence-level table.
     pairs_file : str or pathlib.Path
-        Path to the ExTRI pair-level table (`mmc7`, XLSX).
+        Path to the ExTRI pair-level table.
 
     Returns
     -------
