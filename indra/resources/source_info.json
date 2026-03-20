@@ -352,7 +352,7 @@
     "extri": {
         "name": "ExTRI",
         "link": "https://doi.org/10.1016/j.bbagrm.2021.194778",
-        "type": "database",
+        "type": "reader",
         "domain": "biology",
         "default_style": {
             "color": "black",
