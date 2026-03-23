@@ -1,67 +1,48 @@
-"""API for processing ExTRI supplementary tables into INDRA Statements."""
+"""API for processing ExTRI supplementary tables into INDRA Statements.
 
-from pathlib import Path
-from typing import Union
+The API allows processing a local download of the Excel spreadsheets
+that contain the ExTRI data. To download this, go to
+https://doi.org/10.1016/j.bbagrm.2021.194778 and download
+"Supplementary Table 1. ExTRI sentences."
+"""
 
 import pandas as pd
 
-from .processor import ExtriProcessor, PAIR_COLUMNS, SENTENCE_COLUMNS
+from .processor import ExtriProcessor
 
-__all__ = [
-    'process_from_file',
-    'process_dataframe',
-]
+__all__ = ['process_from_file', 'process_dataframe']
 
 
-def process_from_file(
-    sentence_coverage_file: Union[str, Path],
-    pairs_file: Union[str, Path],
-) -> ExtriProcessor:
+def process_from_file(data_file):
     """Process ExTRI input files into INDRA Statements.
 
     Parameters
     ----------
-    sentence_coverage_file : str or pathlib.Path
+    data_file : str or pathlib.Path
         Path to the ExTRI sentence-level table.
-    pairs_file : str or pathlib.Path
-        Path to the ExTRI pair-level table.
 
     Returns
     -------
     ExtriProcessor
         A processor with extracted statements in ``statements``.
     """
-    sentence_df = pd.read_excel(
-        sentence_coverage_file,
-        usecols=list(SENTENCE_COLUMNS),
-        dtype=str,
-    )
-    pairs_df = pd.read_excel(
-        pairs_file,
-        usecols=list(PAIR_COLUMNS),
-        dtype=str,
-    )
-    return process_dataframe(sentence_df, pairs_df)
+    df = pd.read_excel(data_file, dtype=str)
+    return process_dataframe(df)
 
 
-def process_dataframe(
-    sentence_df: pd.DataFrame,
-    pairs_df: pd.DataFrame,
-) -> ExtriProcessor:
+def process_dataframe(df):
     """Process ExTRI dataframes into INDRA Statements.
 
     Parameters
     ----------
-    sentence_df : pandas.DataFrame
+    df : pandas.DataFrame
         Sentence-level ExTRI dataframe.
-    pairs_df : pandas.DataFrame
-        Pair-level ExTRI dataframe.
 
     Returns
     -------
     ExtriProcessor
         A processor with extracted statements in ``statements``.
     """
-    processor = ExtriProcessor(sentence_df=sentence_df, pairs_df=pairs_df)
+    processor = ExtriProcessor(df=df)
     processor.extract_statements()
     return processor
