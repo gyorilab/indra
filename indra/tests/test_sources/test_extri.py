@@ -9,7 +9,7 @@ from indra.statements import RegulateAmount
 
 
 def test_extri_process_dataframe_minimal():
-    sentence_df = pd.DataFrame([
+    df = pd.DataFrame([
         {
             'PMID:Sentence ID:TF:TG': '123456:1:TP53:CDKN1A',
             'Transcription Factor (Associated Gene Name)': 'TP53',
@@ -17,14 +17,8 @@ def test_extri_process_dataframe_minimal():
             'Sentence': 'TP53 increases CDKN1A expression.',
         }
     ])
-    pairs_df = pd.DataFrame([
-        {
-            'TF:TG': 'TP53:CDKN1A',
-            '[ExTRI] present': 'ExTRI',
-        }
-    ])
 
-    processor = process_dataframe(sentence_df, pairs_df)
+    processor = process_dataframe(df)
 
     assert len(processor.statements) == 1
     stmt = processor.statements[0]
@@ -42,8 +36,8 @@ def test_extri_process_dataframe_minimal():
     assert ev.annotations['pair_key'] == 'TP53:CDKN1A'
 
 
-def test_extri_process_dataframe_requires_explicit_gene_names():
-    sentence_df = pd.DataFrame([
+def test_extri_process_dataframe_skipping():
+    df = pd.DataFrame([
         {
             'PMID:Sentence ID:TF:TG': '123456:1:TP53:CDKN1A',
             'Transcription Factor (Associated Gene Name)': None,
@@ -51,36 +45,24 @@ def test_extri_process_dataframe_requires_explicit_gene_names():
             'Sentence': 'TP53 increases CDKN1A expression.',
         }
     ])
-    pairs_df = pd.DataFrame([
-        {
-            'TF:TG': 'TP53:CDKN1A',
-            '[ExTRI] present': 'ExTRI',
-        }
-    ])
 
-    processor = process_dataframe(sentence_df, pairs_df)
+    processor = process_dataframe(df)
 
     assert len(processor.statements) == 0
     assert processor.skipped == 1
 
-
-def test_extri_process_dataframe_filters_to_extri_pairs():
-    sentence_df = pd.DataFrame([
+def test_misread_gene_symbol_by_pandas():
+    df = pd.DataFrame([
         {
-            'PMID:Sentence ID:TF:TG': '123456:1:TP53:CDKN1A',
-            'Transcription Factor (Associated Gene Name)': 'TP53',
+            'PMID:Sentence ID:TF:TG': '123456:1:DEC1:CDKN1A',
+            'Transcription Factor (Associated Gene Name)': '2020-12-01 00:00:00',
             'Target Gene (Associated Gene Name)': 'CDKN1A',
-            'Sentence': 'TP53 increases CDKN1A expression.',
-        }
-    ])
-    pairs_df = pd.DataFrame([
-        {
-            'TF:TG': 'TP53:CDKN1A',
-            '[ExTRI] present': 'no',
+            'Sentence': 'DEC1 increases CDKN1A expression.',
         }
     ])
 
-    processor = process_dataframe(sentence_df, pairs_df)
-
-    assert len(processor.statements) == 0
-    assert processor.skipped == 1
+    processor = process_dataframe(df)
+    assert len(processor.statements) == 1
+    stmt = processor.statements[0]
+    assert stmt.subj.name == 'DELEC1'
+    assert 'HGNC' in stmt.subj.db_refs
