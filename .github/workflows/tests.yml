@@ -37,11 +37,11 @@ jobs:
         # PySB and dependencies
         wget "https://github.com/RuleWorld/bionetgen/releases/download/BioNetGen-2.4.0/BioNetGen-2.4.0-Linux.tgz" -O bionetgen.tar.gz -nv
         tar xzf bionetgen.tar.gz
-        pip install git+https://github.com/pysb/pysb.git
+        pip install "networkx<3.2"
+        pip install "git+https://github.com/alubbock/pysb.git@fix-install-py3.14"
         # Temporary fix. Ensure cython is installed before pyjnius
         pip install "cython<3"
         pip install "pyjnius==1.1.4" --no-build-isolation
-        pip install "networkx<3.2"
         # Now install INDRA with all its extras
         pip install .[all]
         # Run slow tests only if we're in the cron setting
