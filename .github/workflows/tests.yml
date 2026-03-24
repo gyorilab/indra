@@ -41,6 +41,7 @@ jobs:
         # Temporary fix. Ensure cython is installed before pyjnius
         pip install "cython<3"
         pip install "pyjnius==1.1.4" --no-build-isolation
+        pip install "networkx<3.2"
         # Now install INDRA with all its extras
         pip install .[all]
         # Run slow tests only if we're in the cron setting
