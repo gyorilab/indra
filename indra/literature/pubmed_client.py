@@ -32,7 +32,11 @@ pubmed_fetch = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
 pubmed_archive = "https://ftp.ncbi.nlm.nih.gov/pubmed"
 pubmed_archive_baseline = pubmed_archive + "/baseline/"
 pubmed_archive_update = pubmed_archive + "/updatefiles/"
-pmid_to_pmc_download_url = "https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.csv"
+# As of 2026-04-13, PMC moved these legacy FTP files under /deprecated/
+# and the service is slated for full removal in August 2026. A follow-up
+# migration to the PMC Cloud S3 bucket (s3://pmc-oa-opendata/) is planned.
+pmc_ftp_base_url = "https://ftp.ncbi.nlm.nih.gov/pub/pmc/deprecated"
+pmid_to_pmc_download_url = f"{pmc_ftp_base_url}/oa_file_list.csv"
 RETRACTIONS_FILE = os.path.join(RESOURCES_PATH, "pubmed_retractions.tsv")
 
 
@@ -1438,8 +1442,8 @@ def get_pmid_to_package_url_mapping(fname=None) -> Dict[str, str]:
     fname : Optional[str]
         Optional path to a CSV file containing the mappings data file
         serving as a cache. It can be obtained from
-        https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.csv. If not
-        provided, it is downloaded from this URL.
+        https://ftp.ncbi.nlm.nih.gov/pub/pmc/deprecated/oa_file_list.csv.
+        If not provided, it is downloaded from this URL.
 
     Returns
     -------
@@ -1454,7 +1458,7 @@ def get_pmid_to_package_url_mapping(fname=None) -> Dict[str, str]:
         res.raise_for_status()
         reader = csv.DictReader(StringIO(res.text))
     mapping = {
-        row["PMID"]: f"https://ftp.ncbi.nlm.nih.gov/pub/pmc/{row['File']}"
+        row["PMID"]: f"{pmc_ftp_base_url}/{row['File']}"
         for row in tqdm.tqdm(reader, desc="Generating PMID to PMC URL mapping")
     }
     return mapping
@@ -1473,7 +1477,8 @@ def download_package_for_pmid(pmid: str, out_dir: str,
     mapping : Optional[Dict[str, str]]
         A mapping from PMIDs to PMC package URLs. If None, the mapping
         is fetched from the NCBI FTP server (slow). The mapping can be
-        obtained from https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.csv
+        obtained from
+        https://ftp.ncbi.nlm.nih.gov/pub/pmc/deprecated/oa_file_list.csv
         and loaded using `get_pmid_to_package_url_mapping`.
 
     Returns
@@ -1515,7 +1520,8 @@ def download_package_for_pmids(pmid_list: List[str], out_dir: str,
     mapping : Optional[Dict[str, str]]
         A mapping from PMIDs to PMC package URLs. If None, the mapping
         is fetched from the NCBI FTP server (slow). The mapping can be
-        obtained from https://ftp.ncbi.nlm.nih.gov/pub/pmc/oa_file_list.csv
+        obtained from
+        https://ftp.ncbi.nlm.nih.gov/pub/pmc/deprecated/oa_file_list.csv
         and loaded using `get_pmid_to_package_url_mapping`.
 
     Returns
