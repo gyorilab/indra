@@ -1,8 +1,8 @@
-import requests
 import csv
 import re
-import requests
 from collections import defaultdict
+from functools import lru_cache
+import requests
 
 default_map_name = 'covid19map'
 base_url = 'https://%s.elixir-luxembourg.org/minerva/api/'
@@ -10,7 +10,9 @@ resource_url = ('http://git-r3lab.uni.lu/covid/models/-/raw/master/'
                 'Integration/MINERVA_build/resources.csv')
 
 
+@lru_cache(maxsize=None)
 def get_config(map_name=default_map_name):
+    """Return MINERVA map-level configuration including various metadata."""
     url = (base_url % map_name) + 'configuration/'
     res = requests.get(url)
     res.raise_for_status()
@@ -42,13 +44,16 @@ def get_latest_project_id(map_name=default_map_name):
 
 
 def get_models(project_id, map_name=default_map_name):
+    """Return all models in a given project within a map."""
     url = (base_url % map_name) + ('projects/%s/models/' % project_id)
     res = requests.get(url)
     res.raise_for_status()
     return res.json()
 
 
+@lru_cache(maxsize=None)
 def get_model_elements(model_id, project_id, map_name=default_map_name):
+    """Return all elements in a given model within a project in a ma.p"""
     url = (base_url % map_name) + \
         ('projects/%s/models/%s/' % (project_id, model_id)) + \
         'bioEntities/elements/?columns=id,name,type,elementId,complexId,references'
@@ -106,6 +111,7 @@ def get_ids_to_refs(model_id, map_name=default_map_name):
     return ids_to_refs, complex_members
 
 
+@lru_cache(maxsize=None)
 def get_model_ids(map_name=default_map_name):
     project_id = get_latest_project_id(map_name)
     models = get_models(project_id, map_name)
@@ -115,6 +121,7 @@ def get_model_ids(map_name=default_map_name):
     return model_names_to_ids
 
 
+@lru_cache(maxsize=None)
 def get_sif_filenames_to_ids(map_name=default_map_name):
     model_names_to_ids = get_model_ids(map_name=map_name)
     filenames_to_ids = {}
