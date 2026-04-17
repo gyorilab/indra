@@ -348,5 +348,15 @@
             "color": "white",
             "background-color": "#ffb3ba"
         }
+    },
+    "klifs": {
+        "name": "KLIFS",
+        "link": "https://klifs.net/",
+        "type": "database",
+        "domain": "biology",
+        "default_style": {
+            "color": "black",
+            "background-color": "#ff9966"
+        }
     }
 }

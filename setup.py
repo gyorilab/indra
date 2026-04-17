@@ -93,6 +93,7 @@ def main():
                     'indra.sources.hprd', 'indra.sources.hypothesis',
                     'indra.sources.index_cards',
                     'indra.sources.indra_db_rest', 'indra.sources.isi',
+                    'indra.sources.klifs',
                     'indra.sources.minerva', 'indra.sources.ndex_cx',
                     'indra.sources.reach', 'indra.sources.omnipath',
                     'indra.sources.phosphoelm',
