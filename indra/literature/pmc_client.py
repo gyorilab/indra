@@ -279,6 +279,7 @@ def _extract_from_pmc_ocr(tree):
             continue
 
         text = "".join(pre.itertext())
+        # Remove xml BOM and unify newline format
         text = text.replace("\ufeff", "")
         text = text.replace("\r\n", "\n").replace("\r", "\n")
 
