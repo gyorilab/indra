@@ -270,6 +270,22 @@ class StatementTypeClassification:
         return df
 
     def predict_from_rows(self, rows):
+        """
+        A list of relation records. Each record is a dict with keys:
+        ``subject`` (str), ``object`` (str), ``type`` (str),
+        ``hash`` (int), ``statement`` (str), and
+        ``source_count`` (dict[str, int]).
+        e.g. rows = [
+            {
+                "subject": "MAP2K1",
+                "object": "MAPK1",
+                "type": "Phosphorylation",
+                "hash": 123,
+                "statement": "MAP2K1 phosphorylates MAPK1.",
+                "source_count": {"reach": 3, "sparser": 1},
+            }, ...]
+        """
+
         df_input = self.build_input_from_rows(rows)
 
         if df_input.empty:
