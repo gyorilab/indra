@@ -1,5 +1,7 @@
 from collections import Counter
 from functools import lru_cache
+from io import BytesIO
+from urllib.request import urlopen
 
 import joblib
 import gilda
@@ -15,9 +17,13 @@ from indra.statements import modclass_to_inverse
 class StatementTypeClassification:
     """Predict whether a statement type is correct based on polarity and evidence patterns within an agent-agent group."""
 
+    MODEL_URL = (
+        "https://bigmech.s3.us-east-1.amazonaws.com/classification_model.joblib"
+    )
+
     def __init__(
             self,
-            model_path="classification_model.joblib",
+            model_path=None,
             model=None,
             feature_cols=None,
             opposite_map=None,
@@ -26,7 +32,7 @@ class StatementTypeClassification:
         if model is not None:
             self.model = model
         else:
-            self.model = joblib.load(model_path)
+            self.model = self._load_model(model_path)
 
         self.db_client = db_client
 
@@ -41,6 +47,14 @@ class StatementTypeClassification:
         ]
 
         self.opposite_map = opposite_map or self._make_opposite_map()
+
+
+    def _load_model(self, model_path):
+        if model_path:
+            return joblib.load(model_path)
+
+        with urlopen(self.MODEL_URL) as response:
+            return joblib.load(BytesIO(response.read()))
 
     @staticmethod
     def _make_opposite_map():
@@ -339,4 +353,3 @@ class StatementTypeClassification:
                     hash_to_label[int(stmt_hash)] = int(row["pred_label"])
 
         return {h: hash_to_label.get(h) for h in hashes}
-
