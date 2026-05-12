@@ -234,7 +234,6 @@ class StatementTypeClassification:
 
         df = df.groupby(["subject", "object", "type"], as_index=False).agg({
             "hash": list,
-            "statement": list,
             "source_count": self.merge_source_count_dicts,
             "rel_evidence": "sum",
             "in_signor": "max",
@@ -297,15 +296,13 @@ class StatementTypeClassification:
         """
         A list of relation records. Each record is a dict with keys:
         ``subject`` (str), ``object`` (str), ``type`` (str),
-        ``hash`` (int), ``statement`` (str), and
-        ``source_count`` (dict[str, int]).
+        ``hash`` (int), and ``source_count`` (dict[str, int]).
         e.g. rows = [
             {
                 "subject": "MAP2K1",
                 "object": "MAPK1",
                 "type": "Phosphorylation",
                 "hash": 123,
-                "statement": "MAP2K1 phosphorylates MAPK1.",
                 "source_count": {"reach": 3, "sparser": 1},
             }, ...]
         """
@@ -313,19 +310,22 @@ class StatementTypeClassification:
         df_input = self.build_input_from_rows(rows)
 
         if df_input.empty:
-            return df_input
+            return {}
 
         X = df_input[self.feature_cols].copy()
 
         df_input["pred_prob"] = self.model.predict_proba(X)[:, 1]
         df_input["pred_label"] = self.model.predict(X)
 
-        first_cols = ["subject", "object", "type", "pred_prob", "pred_label"]
-        other_cols = [col for col in df_input.columns if col not in first_cols]
-
-        df_input = df_input[first_cols + other_cols]
-
-        return df_input.sort_values("pred_prob", ascending=False)
+        hash_to_label = {}
+        for _, row in df_input.iterrows():
+            label = int(row["pred_label"])
+            hashes = row["hash"]
+            if not isinstance(hashes, list):
+                hashes = [hashes]
+            for stmt_hash in hashes:
+                hash_to_label[stmt_hash] = label
+        return hash_to_label
 
     def predict_from_hashes(self, hashes):
         """
