@@ -197,16 +197,25 @@ class StatementTypeClassification:
 
         return df
 
-    def predict_pair(self, subject, object):
+    def predict_pair(self, subject, object, simple_result=False):
         df_input = self.build_pair_input(subject, object)
 
         if df_input.empty:
-            return df_input
+            return {} if simple_result else df_input
 
         X = df_input[self.feature_cols].copy()
 
         df_input["pred_prob"] = self.model.predict_proba(X)[:, 1]
         df_input["pred_label"] = self.model.predict(X)
+
+        if simple_result:
+            hash_to_label = {}
+            for _, row in df_input.iterrows():
+                label = int(row["pred_label"])
+                hashes = row["hash"]
+                for stmt_hash in hashes:
+                    hash_to_label[stmt_hash] = label
+            return hash_to_label
 
         first_cols = ["subject", "object", "type", "pred_prob", "pred_label"]
         other_cols = [col for col in df_input.columns if col not in first_cols]
