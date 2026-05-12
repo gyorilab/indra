@@ -1,8 +1,8 @@
 from collections import Counter
 from functools import lru_cache
-from io import BytesIO
-from urllib.request import urlopen
+from tempfile import NamedTemporaryFile
 
+import boto3
 import joblib
 import gilda
 import numpy as np
@@ -17,9 +17,8 @@ from indra.statements import modclass_to_inverse
 class StatementTypeClassification:
     """Predict whether a statement type is correct based on polarity and evidence patterns within an agent-agent group."""
 
-    MODEL_URL = (
-        "https://bigmech.s3.us-east-1.amazonaws.com/classification_model.joblib"
-    )
+    MODEL_BUCKET = "bigmech"
+    MODEL_KEY = "classification_model.joblib"
 
     def __init__(
             self,
@@ -53,8 +52,10 @@ class StatementTypeClassification:
         if model_path:
             return joblib.load(model_path)
 
-        with urlopen(self.MODEL_URL) as response:
-            return joblib.load(BytesIO(response.read()))
+        s3 = boto3.client("s3")
+        with NamedTemporaryFile(suffix=".joblib") as tmp:
+            s3.download_file(self.MODEL_BUCKET, self.MODEL_KEY, tmp.name)
+            return joblib.load(tmp.name)
 
     @staticmethod
     def _make_opposite_map():
