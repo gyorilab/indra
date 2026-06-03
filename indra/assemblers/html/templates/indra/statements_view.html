@@ -211,6 +211,14 @@
         background-color: #f2f2f2;
     }
 
+    .consensus-sentence {
+        display: block;
+        margin-top: 4px;
+        color: #555;
+        font-size: 0.9rem;
+        font-weight: 400;
+    }
+
     .badge-subject {
         background-color: #4a36aa;
         color: #FFFFFF;
@@ -333,7 +341,14 @@
          id="tl-{{ results['html_key'] }}"
          onclick="toggler('tl-{{ results['html_key'] }}')">
       <div class="col-auto nvp">
-        <h5 class="align-middle">{{ results['label'] }}</h5>
+        <h5 class="align-middle">
+          {{ results['label'] }}
+          {% if results.get('consensus') %}
+            <span class="consensus-sentence">
+              {{ results['consensus']['text'] }}
+            </span>
+          {% endif %}
+        </h5>
       </div>
       <div class="col text-right nvp">
         {{ badges(results['source_counts'], available_sources) }}
