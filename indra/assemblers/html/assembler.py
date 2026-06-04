@@ -4,12 +4,14 @@ supports curation.
 """
 import re
 import uuid
+import gzip
+import json
 import logging
 import itertools
 from html import escape
 from typing import Union, Dict, Optional
 from collections import OrderedDict, defaultdict
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname, exists, join
 
 from jinja2 import Environment, FileSystemLoader
 
@@ -39,6 +41,11 @@ loader = FileSystemLoader(join(HERE, 'templates'))
 env = Environment(loader=loader)
 
 default_template = env.get_template('indra/statements_view.html')
+
+AGENT_PAIR_CONSENSUS_CACHE = join(
+    dirname(dirname(dirname(HERE))), 'agent_pair_consensus_cache.json.gz'
+)
+_agent_pair_consensus_cache = None
 
 DB_TEXT_COLOR = 'black'
 """The text color for database sources when shown as source count badges"""
@@ -88,6 +95,40 @@ def _source_info_to_source_colors(
 
 
 DEFAULT_SOURCE_COLORS = _source_info_to_source_colors(SOURCE_INFO)
+
+
+def _load_agent_pair_consensus_cache():
+    global _agent_pair_consensus_cache
+    if _agent_pair_consensus_cache is not None:
+        return _agent_pair_consensus_cache
+    if not exists(AGENT_PAIR_CONSENSUS_CACHE):
+        _agent_pair_consensus_cache = {}
+        return _agent_pair_consensus_cache
+    with gzip.open(AGENT_PAIR_CONSENSUS_CACHE, 'rt') as fh:
+        _agent_pair_consensus_cache = json.load(fh)
+    return _agent_pair_consensus_cache
+
+
+def _make_agent_pair_consensus_summary(record):
+    primary = record.get('primary') or {}
+    effect = primary.get('effect')
+    if not effect:
+        return None
+
+    mechanisms = [str(m) for m in primary.get('mechanisms') or []]
+    mechanism_labels = []
+    if any('binding' in mechanism.lower() for mechanism in mechanisms):
+        mechanism_labels.append('binding')
+    for mechanism in mechanisms:
+        mechanism_label = mechanism.replace('binding-associated ', '', 1)
+        if mechanism_label != 'binding' and \
+                mechanism_label not in mechanism_labels:
+            mechanism_labels.append(mechanism_label)
+
+    return {
+        'effect': effect,
+        'mechanisms': mechanism_labels,
+    }
 
 
 def generate_source_css(fname: str,
@@ -237,7 +278,8 @@ class HtmlAssembler(object):
                  ev_counts=None, beliefs=None, source_counts=None,
                  curation_dict=None, title='INDRA Results', db_rest_url=None,
                  sort_by='default', custom_stats=None,
-                 custom_sources: Optional[SourceInfo] = None):
+                 custom_sources: Optional[SourceInfo] = None,
+                 agent_pair_consensus=None):
         if custom_sources is not None:
             custom_source_list = list(custom_sources)
         else:
@@ -266,6 +308,9 @@ class HtmlAssembler(object):
         self.custom_stats = [] if custom_stats is None else custom_stats
         self.source_colors: Optional[SourceColors] = \
             _source_info_to_source_colors(custom_sources)
+        self.agent_pair_consensus = agent_pair_consensus if \
+            agent_pair_consensus is not None else \
+            _load_agent_pair_consensus_cache()
 
     def add_statements(self, statements):
         """Add a list of Statements to the assembler.
@@ -530,6 +575,12 @@ class HtmlAssembler(object):
                 agp_label = make_top_level_label_from_names_key(tlg['names'])
                 agp_label = re.sub("<b>(.*?)</b>", r"\1", agp_label)
                 agp_label = tag_agents(agp_label, agent_pair_agents)
+                if len(tlg['names']) == 2:
+                    pair_key = '|'.join(str(name) for name in tlg['names'])
+                    consensus = self.agent_pair_consensus.get(pair_key)
+                    if consensus:
+                        tlg['affect_summary'] = \
+                            _make_agent_pair_consensus_summary(consensus)
                 tlg['label'] = agp_label
 
         return stmts

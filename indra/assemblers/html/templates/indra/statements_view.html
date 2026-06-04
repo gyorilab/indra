@@ -333,8 +333,7 @@
 
 {% macro affect_summary(summary) -%}
   {% if summary %}
-  <span class="consensus-affect-summary"
-        {% if summary.get('title') %}title="{{ summary['title']|e }}"{% endif %}>
+  <span class="consensus-affect-summary">
     {% if summary.get('effect') %}
       <span class="consensus-affect-chip">{{ summary['effect']|e }}</span>
     {% endif %}
