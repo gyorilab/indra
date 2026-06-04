@@ -211,12 +211,55 @@
         background-color: #f2f2f2;
     }
 
-    .consensus-sentence {
-        display: block;
-        margin-top: 4px;
+    .consensus-affect-summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.15rem;
+        margin-left: 0.75rem;
         color: #555;
-        font-size: 0.9rem;
-        font-weight: 400;
+        font-size: 0.58em;
+        font-weight: 500;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .consensus-affect-chip {
+        display: inline-block;
+        padding: 0.1rem 0.35rem;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        background-color: #fafafa;
+    }
+
+    .consensus-affect-bridge {
+        position: relative;
+        display: inline-block;
+        width: 0.65rem;
+        height: 1.1em;
+        margin: 0 -0.12rem;
+        vertical-align: middle;
+    }
+
+    .consensus-affect-bridge:before,
+    .consensus-affect-bridge:after {
+        content: "";
+        position: absolute;
+        top: 0.05em;
+        width: 0.38rem;
+        height: 1em;
+        border: 1px solid #777;
+    }
+
+    .consensus-affect-bridge:before {
+        left: 0;
+        border-left: none;
+        border-radius: 0 0.45rem 0.45rem 0;
+    }
+
+    .consensus-affect-bridge:after {
+        right: 0;
+        border-right: none;
+        border-radius: 0.45rem 0 0 0.45rem;
     }
 
     .badge-subject {
@@ -288,6 +331,21 @@
       title="Belief score for this statement">{{ belief_score }}</small>
 {%- endmacro %}
 
+{% macro affect_summary(summary) -%}
+  {% if summary %}
+  <span class="consensus-affect-summary"
+        {% if summary.get('title') %}title="{{ summary['title']|e }}"{% endif %}>
+    {% if summary.get('effect') %}
+      <span class="consensus-affect-chip">{{ summary['effect']|e }}</span>
+    {% endif %}
+    {% for mechanism in summary.get('mechanisms') or [] %}
+      <span class="consensus-affect-bridge"></span>
+      <span class="consensus-affect-chip">{{ mechanism|e }}</span>
+    {% endfor %}
+  </span>
+  {% endif %}
+{%- endmacro %}
+
 {% block footer_desc %}
   This page allows you to curate the loaded statements. For more information
   please see the
@@ -343,11 +401,7 @@
       <div class="col-auto nvp">
         <h5 class="align-middle">
           {{ results['label'] }}
-          {% if results.get('consensus') %}
-            <span class="consensus-sentence">
-              {{ results['consensus']['text'] }}
-            </span>
-          {% endif %}
+          {{ affect_summary(results.get('affect_summary')) }}
         </h5>
       </div>
       <div class="col text-right nvp">
