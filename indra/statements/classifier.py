@@ -507,18 +507,6 @@ class StatementTypeClassification:
             for agent in agents
         )
 
-    @staticmethod
-    def pair_key(subject, obj):
-        return f"{subject}|{obj}"
-
-    @staticmethod
-    def parse_pair(pair):
-        if isinstance(pair, tuple) and len(pair) == 2:
-            return pair[0], pair[1]
-        if isinstance(pair, str) and "|" in pair:
-            return pair.split("|", 1)
-        return None, None
-
     def dump_pair_to_rows(
             self,
             unique_stmts_fpath,
@@ -573,11 +561,9 @@ class StatementTypeClassification:
         cache = {}
         pairs = tqdm(pair_to_rows.items(), total=len(pair_to_rows))
 
-        for pair, rows in pairs:
+        for (pair_subject, pair_object), rows in pairs:
             if not rows:
                 continue
-
-            pair_subject, pair_object = self.parse_pair(pair)
 
             records = self.consensus_from_rows(
                 rows,
@@ -589,7 +575,7 @@ class StatementTypeClassification:
                 continue
 
             for record in records:
-                key = self.pair_key(record["subject"], record["object"])
+                key = f'{record["subject"]}|{record["object"]}'
                 cache[key] = record
 
         with gzip.open(cache_fpath, "wt") as fh:
