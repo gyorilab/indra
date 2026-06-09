@@ -231,35 +231,11 @@
         background-color: #fafafa;
     }
 
-    .consensus-affect-bridge {
-        position: relative;
+    .consensus-affect-arrow {
         display: inline-block;
-        width: 0.65rem;
-        height: 1.1em;
-        margin: 0 -0.12rem;
-        vertical-align: middle;
-    }
-
-    .consensus-affect-bridge:before,
-    .consensus-affect-bridge:after {
-        content: "";
-        position: absolute;
-        top: 0.05em;
-        width: 0.38rem;
-        height: 1em;
-        border: 1px solid #777;
-    }
-
-    .consensus-affect-bridge:before {
-        left: 0;
-        border-left: none;
-        border-radius: 0 0.45rem 0.45rem 0;
-    }
-
-    .consensus-affect-bridge:after {
-        right: 0;
-        border-right: none;
-        border-radius: 0.45rem 0 0 0.45rem;
+        margin: 0 0.1rem;
+        color: #777;
+        font-weight: 600;
     }
 
     .badge-subject {
@@ -334,12 +310,11 @@
 {% macro affect_summary(summary) -%}
   {% if summary %}
   <span class="consensus-affect-summary">
-    {% if summary.get('effect') %}
-      <span class="consensus-affect-chip">{{ summary['effect']|e }}</span>
-    {% endif %}
-    {% for mechanism in summary.get('mechanisms') or [] %}
-      <span class="consensus-affect-bridge"></span>
-      <span class="consensus-affect-chip">{{ mechanism|e }}</span>
+    {% for step in summary.get('steps') or [] %}
+      {% if not loop.first %}
+        <span class="consensus-affect-arrow">&rarr;</span>
+      {% endif %}
+      <span class="consensus-affect-chip">{{ step|e }}</span>
     {% endfor %}
   </span>
   {% endif %}
