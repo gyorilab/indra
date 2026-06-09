@@ -111,23 +111,26 @@ def _load_agent_pair_consensus_cache():
 
 def _make_agent_pair_consensus_summary(record):
     primary = record.get('primary') or {}
-    effect = primary.get('effect')
-    if not effect:
+    steps = []
+
+    mechanism_types = primary.get('mechanism_types') or []
+    if 'Complex' in mechanism_types:
+        steps.append('Binding')
+    for mechanism_type in mechanism_types:
+        if mechanism_type == 'Complex':
+            continue
+        if mechanism_type not in steps:
+            steps.append(mechanism_type)
+
+    for effect_type in primary.get('effect_types') or []:
+        if effect_type not in steps:
+            steps.append(effect_type)
+
+    if not steps:
         return None
 
-    mechanisms = [str(m) for m in primary.get('mechanisms') or []]
-    mechanism_labels = []
-    if any('binding' in mechanism.lower() for mechanism in mechanisms):
-        mechanism_labels.append('binding')
-    for mechanism in mechanisms:
-        mechanism_label = mechanism.replace('binding-associated ', '', 1)
-        if mechanism_label != 'binding' and \
-                mechanism_label not in mechanism_labels:
-            mechanism_labels.append(mechanism_label)
-
     return {
-        'effect': effect,
-        'mechanisms': mechanism_labels,
+        'steps': steps,
     }
 
 
