@@ -180,7 +180,8 @@ class StatementTypeClassification:
 
     def predict_pair(self, subject, object, simple_result=False):
         df_input = self.build_input_from_rows(
-            self.get_pair_df(subject, object)
+            self.get_pair_df(subject, object),
+            pair_direction=(subject, object),
         )
 
         if df_input.empty:
@@ -197,11 +198,22 @@ class StatementTypeClassification:
 
         return df_input.sort_values("pred_prob", ascending=False)
 
-    def build_input_from_rows(self, rows):
+    def build_input_from_rows(self, rows, pair_direction=None):
         df = pd.DataFrame(rows)
 
         if df.empty:
             return df
+
+        if pair_direction is not None:
+            pair_subject, pair_object = pair_direction
+            mask = (
+                (df["type"] == "Complex")
+                & (df["subject"] == pair_object)
+                & (df["object"] == pair_subject)
+            )
+            df.loc[mask, ["subject", "object"]] = [
+                pair_subject, pair_object
+            ]
 
         df["rel_evidence"] = df["source_count"].apply(lambda x: sum(x.values()))
         df["in_signor"] = df["source_count"].apply(lambda x: int("signor" in x))
@@ -288,7 +300,6 @@ class StatementTypeClassification:
         """
 
         df_input = self.build_input_from_rows(rows)
-
         if df_input.empty:
             return {}
 
@@ -388,18 +399,14 @@ class StatementTypeClassification:
         return mechanism_types
 
     def consensus_from_rows(self, rows, pair_subject=None, pair_object=None):
-        df = self.build_input_from_rows(rows)
+        pair_direction = None
+        if pair_subject is not None and pair_object is not None:
+            pair_direction = (pair_subject, pair_object)
+
+        df = self.build_input_from_rows(rows, pair_direction=pair_direction)
 
         if df.empty:
             return None
-
-        if pair_subject is not None and pair_object is not None:
-            mask = (
-                (df["type"] == "Complex")
-                & (df["subject"] == pair_object)
-                & (df["object"] == pair_subject)
-            )
-            df.loc[mask, ["subject", "object"]] = [pair_subject, pair_object]
 
         df = self._add_predictions(df)
 
