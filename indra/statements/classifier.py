@@ -529,12 +529,12 @@ class StatementTypeClassification:
             source_counts = pickle.load(fh)
 
         pair_to_rows = defaultdict(list)
+        hash_to_pair_keys = defaultdict(list)
 
         with gzip.open(unique_stmts_fpath, "rt") as fh:
             reader = csv.reader(fh, delimiter="\t")
-            reader = tqdm(reader, total=total)
 
-            for stmt_hash, stmt_json_str in reader:
+            for stmt_hash, stmt_json_str in tqdm(reader, total=48079265):
                 stmt_json = json_loader(stmt_json_str)
                 stmt = stmt_from_json(stmt_json)
                 agents = stmt.agent_list()
@@ -542,19 +542,32 @@ class StatementTypeClassification:
                     continue
 
                 sub, obj = agents[0].name, agents[1].name
-                stmt_hash = int(stmt_hash)
-                source_count = source_counts.get(stmt_hash)
-                row = self._make_stmt_row(
-                    sub,
-                    obj,
-                    stmt.__class__.__name__,
-                    stmt_hash,
-                    source_count,
-                )
-                pair_to_rows[(sub, obj)].append(row)
+                hash = int(stmt_hash)
+                source_count = source_counts.get(hash)
 
-        with open(pair_to_rows_fpath, "wb") as fh:
+                if stmt.__class__.__name__ == "Complex":
+                    pairs = [(sub, obj), (obj, sub)]
+                else:
+                    pairs = [(sub, obj)]
+
+                for row_sub, row_obj in pairs:
+                    pair_key = f"{row_sub}|{row_obj}"
+                    row = self._make_stmt_row(
+                        row_sub,
+                        row_obj,
+                        hash,
+                        stmt,
+                        source_count,
+                    )
+                    self._make_stmt_row[(row_sub, row_obj)].append(row)
+                    if pair_key not in hash_to_pair_keys[stmt_hash]:
+                        hash_to_pair_keys[stmt_hash].append(pair_key)
+
+        with open("pair_to_rows.pkl", "wb") as fh:
             pickle.dump(pair_to_rows, fh, protocol=pickle.HIGHEST_PROTOCOL)
+
+        with gzip.open("hash_to_pair_keys.json.gz", "wt") as fh:
+            json.dump(hash_to_pair_keys, fh)
 
         return pair_to_rows
 
