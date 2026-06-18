@@ -113,25 +113,17 @@ def _make_agent_pair_consensus_summary(record):
     primary = record.get('primary') or {}
     steps = []
 
-    mechanism_types = primary.get('mechanism_types') or []
-    if 'Complex' in mechanism_types:
-        steps.append('Binding')
-    for mechanism_type in mechanism_types:
-        if mechanism_type == 'Complex':
-            continue
-        if mechanism_type not in steps:
-            steps.append(mechanism_type)
-
-    for effect_type in primary.get('effect_types') or []:
-        if effect_type not in steps:
-            steps.append(effect_type)
+    for step in (
+        primary.get('mechanism_types', [])
+        + primary.get('effect_types', [])
+    ):
+        if step not in steps:
+            steps.append(step)
 
     if not steps:
         return None
 
-    return {
-        'steps': steps,
-    }
+    return {'steps': steps}
 
 
 def generate_source_css(fname: str,
