@@ -9,12 +9,12 @@ future
 requests
 pysb
 pandas
-rdflib
 jinja2
 protmapper
 pyyaml
-networkx>=2.1
+networkx>=3
 obonet
+tqdm
 pybel
 unidecode
 pybiopax
