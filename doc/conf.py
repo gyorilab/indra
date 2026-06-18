@@ -61,8 +61,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'INDRA'
-copyright = '2024, B. M. Gyori, J. A. Bachman'
-author = 'B. M. Gyori, J. A. Bachman'
+copyright = '2026, B. M. Gyori'
+author = 'B. M. Gyori'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -327,7 +327,7 @@ jnius_config.vm_running = False
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'https://docs.python.org/3/': None,
+    'python': ('https://docs.python.org/3/', None),
     'pybel': ('https://pybel.readthedocs.io/en/latest/', None),
     'boto3': ('https://boto3.amazonaws.com/v1/documentation/api/latest/', None),
     'pysb': ('https://docs.pysb.org/en/latest/', None),
