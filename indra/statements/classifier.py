@@ -413,7 +413,25 @@ class StatementTypeClassification:
         true_df = df[df["pred_label"] == 1].copy()
 
         if true_df.empty:
-            return None
+            top = df.sort_values("pred_prob", ascending=False).head(1).copy()
+            row = top.iloc[0]
+            return [
+                {
+                    "subject": row["subject"],
+                    "object": row["object"],
+                    "primary": {
+                        "effect": row["type"],
+                        "support_score": float(row["pred_prob"]),
+                        "effect_rel_evidence": int(row["rel_evidence"]),
+                        "mechanism_rel_evidence": 0,
+                        "effect_types": [row["type"]],
+                        "mechanism_types": [],
+                    },
+                    "alternatives": [],
+                    "true_types": [row["type"]],
+                    "pair_total_evidence": int(row["pair_total_evidence"]),
+                }
+            ]
 
         records = []
 
