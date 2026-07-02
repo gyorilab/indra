@@ -211,6 +211,33 @@
         background-color: #f2f2f2;
     }
 
+    .consensus-affect-summary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.15rem;
+        margin-left: 0.75rem;
+        color: #555;
+        font-size: 0.58em;
+        font-weight: 500;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .consensus-affect-chip {
+        display: inline-block;
+        padding: 0.1rem 0.35rem;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        background-color: #fafafa;
+    }
+
+    .consensus-affect-arrow {
+        display: inline-block;
+        margin: 0 0.1rem;
+        color: #777;
+        font-weight: 600;
+    }
+
     .badge-subject {
         background-color: #4a36aa;
         color: #FFFFFF;
@@ -280,6 +307,19 @@
       title="Belief score for this statement">{{ belief_score }}</small>
 {%- endmacro %}
 
+{% macro affect_summary(summary) -%}
+  {% if summary %}
+  <span class="consensus-affect-summary">
+    {% for step in summary.get('steps') or [] %}
+      {% if not loop.first %}
+        <span class="consensus-affect-arrow">&rarr;</span>
+      {% endif %}
+      <span class="consensus-affect-chip">{{ step|e }}</span>
+    {% endfor %}
+  </span>
+  {% endif %}
+{%- endmacro %}
+
 {% block footer_desc %}
   This page allows you to curate the loaded statements. For more information
   please see the
@@ -333,7 +373,10 @@
          id="tl-{{ results['html_key'] }}"
          onclick="toggler('tl-{{ results['html_key'] }}')">
       <div class="col-auto nvp">
-        <h5 class="align-middle">{{ results['label'] }}</h5>
+        <h5 class="align-middle">
+          {{ results['label'] }}
+          {{ affect_summary(results.get('affect_summary')) }}
+        </h5>
       </div>
       <div class="col text-right nvp">
         {{ badges(results['source_counts'], available_sources) }}
