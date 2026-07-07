@@ -511,6 +511,10 @@ def extract_paragraphs(xml_string):
             except ValueError:
                 continue
         etree.cleanup_namespaces(tree)
+
+    if _is_pmc_ocr_xml(tree):
+        return _extract_from_pmc_ocr(tree)
+
     # Strip out latex
     _remove_elements_by_tag(tree, 'tex-math')
     # Strip out all content in unwanted elements except the captions
@@ -564,6 +568,39 @@ def filter_pmids(pmid_list, source_type):
             pmids_fulltext_dict[source_type] = fulltext_list
     return list(set(pmid_list).intersection(
                                 pmids_fulltext_dict.get(source_type)))
+
+
+
+def _is_pmc_ocr_xml(tree):
+    """Return True if this JATS XML contains PMC OCR text."""
+    preformats = tree.findall(".//preformat")
+    for pre in preformats:
+        if pre.get("preformat-type") == "pmc-ocr-text":
+            return True
+    return False
+
+
+def _extract_from_pmc_ocr(tree):
+    """Extract PMC OCR text as a list of paragraphs."""
+    paragraphs = []
+
+    for pre in tree.findall(".//preformat"):
+        if pre.get("preformat-type") != "pmc-ocr-text":
+            continue
+
+        text = "".join(pre.itertext())
+        # Remove xml BOM and unify newline formats
+        text = text.replace("\ufeff", "")
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+
+        raw_paragraphs = re.split(r"\n\s*\n+", text)
+
+        for para in raw_paragraphs:
+            lines = [line.strip() for line in para.splitlines() if line.strip()]
+            if lines:
+                paragraphs.append(" ".join(lines))
+
+    return paragraphs
 
 
 def _select_from_top_level(tree, tag):
